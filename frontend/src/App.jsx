@@ -31,7 +31,6 @@ import Profile from "./components/Dashboard/Profile";
 import Domain from "./components/Interview_Setting/Domain";
 import ComingSoon from "./components/Coming_soon";
 import Login from "./components/Login";
-import InterviewList from "./components/Review_Interview/Interview_List";
 
 function Logout() {
   localStorage.clear();
@@ -76,7 +75,6 @@ function App() {
           <Route path="domain" element={<Domain />} />
           <Route path="coming-soon" element={<ComingSoon />} />
           <Route path="checklogin" element={<Login />} />
-          <Route path="checkint" element={<InterviewList/>} />
         </Route>
       </Routes>
     </BrowserRouter>

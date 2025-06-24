@@ -4,7 +4,7 @@ from .models import Interview, Question, Response
 class ResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Response
-        fields = ['id', 'text', 'video_url']
+        fields = ['id', 'interview', 'question', 'text', 'video_url', 'ai_feedback']
 
 class QuestionSerializer(serializers.ModelSerializer):
     response = ResponseSerializer(read_only=True)

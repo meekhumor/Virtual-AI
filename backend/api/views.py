@@ -1,42 +1,69 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import User, Resume 
-from .serializers import InterviewSerializer,  QuestionSerializer
+from .models import User, Resume, Interview, Question, Response as UserResponse
+from .serializers import InterviewSerializer, QuestionSerializer
 from .supabase_client import supabase
 from rest_framework.permissions import IsAuthenticated
 from .auth import SupabaseJWTAuthentication
 from mimetypes import guess_type
-from .models import Interview, Question, Response as UserResponse
+from datetime import datetime, timezone
+import jwt
+from rest_framework.response import Response as DRFResponse
+
 
 class StartInterviewView(APIView):
-    permission_classes = [IsAuthenticated]
-
     def post(self, request):
-        data = request.data
+        # Step 1: Decode token
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return Response({'detail': 'Authentication credentials were not provided.'}, status=401)
+
+        token = auth_header.split(' ')[1]
+        try:
+            decoded = jwt.decode(token, options={"verify_signature": False})
+            supabase_id = decoded.get('sub')
+            user = User.objects.get(supabase_id=supabase_id)
+        except Exception as e:
+            return Response({'detail': f'Invalid token: {str(e)}'}, status=401)
+
+        # Step 2: Get input data
+        title = request.data.get('title')
+        level = request.data.get('level')
+        mode = request.data.get('mode')
+        duration = request.data.get('duration_seconds')
+
+        if not all([title, level, mode, duration]):
+            return Response({'detail': 'Missing interview details.'}, status=400)
+
+        # Step 3: Create Interview
         interview = Interview.objects.create(
-            user=request.user,
-            title=data.get('title', 'General Interview'),
-            scheduled_at=timezone.now(),
-            level=data['level'],
-            mode=data['mode'],
-            duration_seconds=data.get('duration_seconds', 600)
+            user=user,
+            title=title,
+            level=level,
+            mode=mode,
+            duration_seconds=duration,
+            scheduled_at=datetime.now()
         )
 
-        # Dummy question generation (replace with LLM integration later)
-        questions_text = [
-            "Tell me about yourself.",
-            "What are your strengths?",
-            "Why do you want this job?"
+        # Step 4: Simulate LLM-based questions
+        dummy_questions = [
+            "What is React and how does it differ from other frameworks?",
+            "Can you explain how the virtual DOM works in React?",
+            "What are props and state in React? How do they differ?"
         ]
-        for idx, text in enumerate(questions_text):
+
+        for i, q in enumerate(dummy_questions, start=1):
             Question.objects.create(
                 interview=interview,
-                text=text,
-                order=idx + 1
+                text=q,
+                order=i
             )
 
-        return Response({"interview_id": interview.id}, status=201)
+        # Step 5: Return full interview with questions
+        serializer = InterviewSerializer(interview)
+        return Response(serializer.data, status=201)
+
 
 class InterviewCreateView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
@@ -79,26 +106,25 @@ class InterviewListView(APIView):
 
 
 class SubmitResponseView(APIView):
-    authentication_classes = [SupabaseJWTAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def post(self, request, question_id):
+    def post(self, request, interview_id, question_id):
         try:
-            question = Question.objects.get(id=question_id, interview__user=request.user)
-        except Question.DoesNotExist:
-            return Response({"error": "Invalid question or not authorized"}, status=404)
+            interview = Interview.objects.get(id=interview_id)
+            question = Question.objects.get(id=question_id)
+        except (Interview.DoesNotExist, Question.DoesNotExist):
+            return DRFResponse({"detail": "Interview or Question not found"}, status=404)
 
-        text = request.data.get('text')
-        video_url = request.data.get('video_url', '')
+        text = request.data.get("text")
+        if not text:
+            return DRFResponse({"detail": "Text is required"}, status=400)
 
         response = UserResponse.objects.create(
+            interview=interview,
             question=question,
             text=text,
-            video_url=video_url
         )
+        return DRFResponse({"id": response.id, "text": response.text}, status=201)
 
-        return Response({"message": "Response submitted"}, status=201)
-    
+
 class SignupView(APIView):
     def post(self, request):
         email = request.data.get('api_email', request.data.get('email'))
@@ -115,7 +141,8 @@ class SignupView(APIView):
             return Response({"message": "User created"}, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-        
+
+
 class LoginView(APIView):
     def post(self, request):
         email = request.data.get('email')
@@ -128,6 +155,7 @@ class LoginView(APIView):
             }, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class ResumeUploadView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
