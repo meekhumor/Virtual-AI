@@ -86,9 +86,8 @@ export default function Resume() {
             alt="File upload"
           />
           <div className="text-gray-400 text-sm">
-            {fileName ? (
-              <p className="text-blue1">{fileName}</p>
-            ) : (
+            {fileName ? fileName
+            : (
               <p>Click the icon to select files. <br/>Upload PDF, DOCX, or TXT.</p>
             )}
           </div>

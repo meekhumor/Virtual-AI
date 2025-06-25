@@ -21,9 +21,7 @@ const stripMarkdown = (text) => {
 };
 
 // Define the API base URL based on environment
-const API_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://virtual-interviewer.onrender.com'
-  : 'http://localhost:8000';
+const API_BASE_URL = 'http://localhost:8000';
 
 export default function Interview_Simulator() {
   const videoRef = useRef(null);
@@ -36,26 +34,31 @@ export default function Interview_Simulator() {
   const [showInfo, setShowInfo] = useState(true);
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
   const [text, setText] = useState("");
-  const [timeLeft, setTimeLeft] = useState("1200"); 
+  const [timeLeft, setTimeLeft] = useState(1200); 
   const [isRunning, setIsRunning] = useState(false);
-  const [Level, setLevel] = useState("Internship");
-  const [Time, setTime] = useState("20");
-  const [micStartTime, setMicStartTime] = useState(null); 
+  const [level, setLevel] = useState("ENTRY");
+  const [mode, setMode] = useState("PRACTICE");
+  const [duration, setDuration] = useState(1200); // Default to 20 minutes
+  const [micStartTime, setMicStartTime] = useState(null);
   const [shouldProcessTranscript, setShouldProcessTranscript] = useState(false);
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); 
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [interviewId, setInterviewId] = useState(null);
+  const [questions, setQuestions] = useState([]);
 
   useEffect(() => {
     const storedTime = sessionStorage.getItem("interviewTime");
     const storedLevel = sessionStorage.getItem("interviewLevel");
+    const storedMode = sessionStorage.getItem("interviewMode");
 
-    setTime(storedTime);
-    setLevel(storedLevel);
     if (storedTime) {
-      setTimeLeft(parseInt(storedTime) * 60); 
+      setDuration(parseInt(storedTime));
+      setTimeLeft(parseInt(storedTime));
     }
+    if (storedLevel) setLevel(storedLevel);
+    if (storedMode) setMode(storedMode);
 
-    // Send initial "hello" message to start the interview
-    handleSendMessage("hello");
+    // Start the interview
+    startInterview();
   }, []);
 
   useEffect(() => {
@@ -97,8 +100,8 @@ export default function Interview_Simulator() {
   };
 
   const handleMicToggle = () => {
-    setIsRunning(prev => !prev);
-    setMicStatus(prev => {
+    setIsRunning((prev) => !prev);
+    setMicStatus((prev) => {
       if (!prev) {
         startListening();
       } else {
@@ -146,60 +149,103 @@ export default function Interview_Simulator() {
     }
   };
 
-  const handleSendMessage = async (inputMessage) => {
-    if (!inputMessage.trim()) {
-      console.warn("Input message is empty.");
-      return;
-    }
-  
-    setTranscriptHistory((prevHistory) => [
-      ...prevHistory,
-      { sender: "user", text: inputMessage },
-    ]);
-  
-    const data = {
-      input_value: inputMessage,
-      tweaks: {
-        "TextInput-QXLsN": { input_value: Level },
-        "TextInput-XXLvP": { input_value: Time },
-      },
-      instruction: "Ask one interview question at a time based on the level and user input."
-    };
-  
+  const startInterview = async () => {
     try {
-      console.log("Sending data to API:", JSON.stringify(data).substring(0, 200) + "...");
-      
-      const response = await fetch(`${API_BASE_URL}/api/gemini/`, {
+      const response = await fetch(`${API_BASE_URL}/api/interviews/start/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("token")}`, // Assuming token is stored in localStorage
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          title: "General Interview",
+          level: level,
+          mode: mode,
+          duration_seconds: duration,
+        }),
       });
-  
+
       if (!response.ok) {
         throw new Error(`Error: ${response.statusText}`);
       }
-  
-      const result = await response.json();
-      const message = result.outputs?.[0]?.outputs?.[0]?.results?.message?.text || "No response received";
-      
-      handleSpeak(message);
-      setTranscriptHistory((prevHistory) => [
-        ...prevHistory,
-        { sender: "ai", text: message },
-      ]);
-      setCurrentQuestionIndex((prev) => prev + 1);
+
+      const data = await response.json();
+      setInterviewId(data.id);
+      setQuestions(data.questions || []);
+      if (data.questions && data.questions.length > 0) {
+        setTranscriptHistory([{ sender: "ai", text: data.questions[0].text }]);
+        handleSpeak(data.questions[0].text);
+      }
     } catch (error) {
-      console.error("Error fetching AI response:", error.message);
+      console.error("Error starting interview:", error.message);
       setTranscriptHistory((prevHistory) => [
         ...prevHistory,
-        { sender: "ai", text: "Sorry, I couldn't process your response. Let's continue anyway. What’s your name and what topics would you like to discuss?" },
+        { sender: "ai", text: "Sorry, I couldn't start the interview. Please try again." },
       ]);
     }
   };
 
-  // JSX remains unchanged
+  const handleSendMessage = async (inputMessage) => {
+    if (!inputMessage.trim() || !interviewId || !questions[currentQuestionIndex]) {
+      console.warn("Invalid input, interview ID, or question.");
+      return;
+    }
+
+    setTranscriptHistory((prevHistory) => [
+      ...prevHistory,
+      { sender: "user", text: inputMessage },
+    ]);
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/interviews/${interviewId}/questions/${questions[currentQuestionIndex].id}/response/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ text: inputMessage }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      const aiFeedback = result.ai_feedback || "Thank you for your response.";
+      handleSpeak(aiFeedback);
+      setTranscriptHistory((prevHistory) => [
+        ...prevHistory,
+        { sender: "ai", text: aiFeedback },
+      ]);
+
+      // Move to the next question if available
+      if (currentQuestionIndex + 1 < questions.length) {
+        setCurrentQuestionIndex((prev) => prev + 1);
+        const nextQuestion = questions[currentQuestionIndex + 1].text;
+        handleSpeak(nextQuestion);
+        setTranscriptHistory((prevHistory) => [
+          ...prevHistory,
+          { sender: "ai", text: nextQuestion },
+        ]);
+      } else {
+        setTranscriptHistory((prevHistory) => [
+          ...prevHistory,
+          { sender: "ai", text: "Interview completed. Thank you!" },
+        ]);
+        setIsRunning(false);
+      }
+    } catch (error) {
+      console.error("Error submitting response:", error.message);
+      setTranscriptHistory((prevHistory) => [
+        ...prevHistory,
+        { sender: "ai", text: "Sorry, I couldn't process your response. Please try again." },
+      ]);
+    }
+  };
+
   return (
     <div className="flex flex-col justify-between items-center text-white min-h-screen relative">
       <div className={`fixed top-0 max-w-7xl w-full mx-auto ${isTopBarOpen ? "h-28" : "h-8"} bg-zinc-900 flex items-center justify-between px-6 transition-all duration-500 ease-in-out rounded-b-xl z-10`}>
@@ -209,7 +255,7 @@ export default function Interview_Simulator() {
             {timeLeft !== null && <p className="text-xl font-semibold">{formatTime(timeLeft)}</p>}
           </div>
           <div className="w-96 bg-gray-800 h-12 rounded-full overflow-hidden relative flex items-center my-4">
-            <div className="bg-blue-600 h-full absolute left-0 top-0" style={{ width: `${((Time * 60 - timeLeft) / (Time * 60)) * 100}%` }}></div>
+            <div className="bg-blue-600 h-full absolute left-0 top-0" style={{ width: `${((duration - timeLeft) / duration) * 100}%` }}></div>
             <div className="flex justify-between w-full px-4 relative z-10 items-center">
               <img src="/rocket.png" alt="Rocket" className="w-7 h-7" />
               <img src="/goal.png" alt="Goal" className="w-7 h-7" />
