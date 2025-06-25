@@ -1,28 +1,39 @@
 import React, { useState } from "react";
-import { useNavigate, Link} from "react-router-dom";
-import api from "../../api"; // Adjust the import according to your file structure
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "../../constants";
+import { useNavigate, Link } from "react-router-dom";
+
+const API_BASE = "http://localhost:8000/api";
 
 const LoginModal = ({ isOpen, onClose }) => {
-  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    setLoading(true);
+  const handleLogin = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setErrorMessage("");
 
     try {
-      const res = await api.post("/api/token/", { username, email, password }); 
-      localStorage.setItem(ACCESS_TOKEN, res.data.access);
-      localStorage.setItem(REFRESH_TOKEN, res.data.refresh);
-      navigate("/dashboard");
+      const res = await fetch(`${API_BASE}/login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    } catch (error) {
-      setErrorMessage("Invalid credentials. Please try again.");
+      const data = await res.json();
+
+      if (res.ok) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("userEmail", data.user.email);
+        localStorage.setItem("username", data.user.username); 
+        navigate("/dashboard"); // adjust route if needed
+      } else {
+        setErrorMessage(data.error || "Login failed");
+      }
+    } catch (err) {
+      setErrorMessage("Login error: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -37,7 +48,6 @@ const LoginModal = ({ isOpen, onClose }) => {
           <img src="/closeLogin.svg" onClick={onClose} alt="Close" />
         </div>
 
-        {/* Heading  */}
         <div className="flex flex-col gap-3 items-center justify-center mb-8 mt-4">
           <h1 className="text-3xl font-semibold">Welcome back!</h1>
           <div className="flex gap-1 text-sm">
@@ -46,24 +56,7 @@ const LoginModal = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Credentials  */}
-        <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="username" className="block text-sm text-gray-800 font-semibold">
-              Username
-            </label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              placeholder="Enter your username"
-              className="mt-2 block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-            />
-          </div>
-
+        <form onSubmit={handleLogin}>
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm text-gray-800 font-semibold">
               Email
@@ -97,13 +90,15 @@ const LoginModal = ({ isOpen, onClose }) => {
           </div>
 
           <button type="submit" className="w-full py-3 px-4 bg-blue1 text-white rounded-xl hover:bg-darkblue mt-6">
-            {loading ? "Loading..." : "Submit"}
+            {loading ? "Loading..." : "Login"}
           </button>
 
           {errorMessage && <p className="text-sm text-red-500 text-center mt-4">{errorMessage}</p>}
-
         </form>
-        <p className="text-sm text-center mt-7 mb-6 text-darkblue cursor-pointer">Forgot your password?</p>
+
+        <p className="text-sm text-center mt-7 mb-6 text-darkblue cursor-pointer">
+          Forgot your password?
+        </p>
       </div>
     </div>
   );

@@ -6,10 +6,10 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-response = supabase.auth.sign_in_with_password({
-    "email": "om170904@gmail.com",          
-    "password": "Om@170904"   
-})
+# response = supabase.auth.sign_in_with_password({
+#     "email": "om170904@gmail.com",          
+#     "password": "Om@170904"   
+# })
 
-access_token = response.session.access_token
-print("Access Token:", access_token)
+# access_token = response.session.access_token
+# print("Access Token:", access_token)

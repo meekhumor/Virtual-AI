@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import CardSign from "./CardSign";
-import axios from "axios";
-import api from "../../api";
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "../../constants";
+
+const API_BASE = "http://localhost:8000/api";
 
 const signup = [
   {
@@ -29,25 +28,35 @@ export default function Register() {
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
-    setLoading(true);
     e.preventDefault();
+    setLoading(true);
+    setErrorMessage("");
 
     try {
-      const res = await api.post("/api/user/register/", { email, username, password });
-      alert("Registration successful");
+      const signupResponse = await fetch(`${API_BASE}/signup/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, username, password }),
+      });
 
-      const loginRes = await api.post("/api/token/", { username, email, password });
-      localStorage.setItem(ACCESS_TOKEN, loginRes.data.access);
-      localStorage.setItem(REFRESH_TOKEN, loginRes.data.refresh);
+      const data = await signupResponse.json();
 
-      navigate("/dashboard");
-    } catch (error) {
-      alert("Already registered, please login!")
+      if (!signupResponse.ok) {
+        throw new Error(data?.error || data?.message || "Signup failed");
+      }
+
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("username", data.user.username);
+      localStorage.setItem("userEmail", data.user.email);
+
+      navigate("/confirm-email");
+    } catch (err) {
+      setErrorMessage(err.message);
+      alert(err.message); 
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <div className="w-full max-w-5xl flex mx-auto h-full mt-16">
       {/* Left */}
@@ -56,9 +65,7 @@ export default function Register() {
         <div className="flex flex-col gap-8">
           {signup.map((step, index) => (
             <div key={index}>
-              <div>
-                <CardSign title={step.title} description={step.description} />
-              </div>
+              <CardSign title={step.title} description={step.description} />
             </div>
           ))}
         </div>
@@ -68,10 +75,11 @@ export default function Register() {
       <div className="flex flex-col gap-10 bg-black1 bg-opacity-40 p-20 px-24 lg:rounded-r-3xl sm:mx-auto">
         <h1 className="text-white text-3xl">Sign Up</h1>
         <form onSubmit={handleSubmit} className="flex flex-col">
-          <label htmlFor="username" className="text-gray-200 ml-2 mb-2"> 
+          <label htmlFor="username" className="text-gray-200 ml-2 mb-2">
             Username
           </label>
-          <input 
+          <input
+            id="username"
             className="rounded-full border-2 w-80 py-1 pl-4 mb-4"
             type="text"
             value={username}
@@ -81,17 +89,19 @@ export default function Register() {
           <label htmlFor="email" className="text-gray-200 ml-2 mb-2">
             Email
           </label>
-          <input 
-            type="email" 
+          <input
+            id="email"
+            type="email"
             className="rounded-full border-2 py-1 pl-4 mb-4"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-          <label htmlFor="password" className="text-gray-200 ml-2 mb-2"> 
+          <label htmlFor="password" className="text-gray-200 ml-2 mb-2">
             Password
           </label>
-          <input 
+          <input
+            id="password"
             className="rounded-full border-2 py-1 pl-4 mb-4"
             type="password"
             value={password}
@@ -99,13 +109,14 @@ export default function Register() {
             required
           />
           <div className="flex items-center gap-4 mt-6">
-            <button 
-              type="submit" 
-              className="bg-blue1 hover:bg-darkblue/50 text-white py-1.5 px-4 rounded-full w-28"
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-blue1 hover:bg-darkblue/50 text-white py-1.5 px-4 rounded-full w-28 disabled:opacity-50"
             >
-              {loading ? "Loading..." : "Continue"} 
+              {loading ? "Loading..." : "Continue"}
             </button>
-            <Link 
+            <Link
               to="/dashboard"
               className="text-zinc-400 hover:text-zinc-300 underline ml-24"
             >

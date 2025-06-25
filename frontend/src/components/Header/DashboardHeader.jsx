@@ -1,10 +1,10 @@
 import { Link, NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { getUserDetails } from "../../api";
+const username = localStorage.getItem("username");
+
 
 export default function DashboardHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [userDetails, setUserDetails] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   const toggleMenu = () => {
@@ -15,18 +15,6 @@ export default function DashboardHeader() {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  useEffect(() => {
-    const fetchUserDetails = async () => {
-      try {
-        const data = await getUserDetails();
-        setUserDetails(data);
-      } catch (error) {
-        console.log("Failed to fetch user details");
-      }
-    };
-
-    fetchUserDetails();
-  }, []);
 
   return (
     <header className="shadow sticky z-50 top-0">
@@ -50,7 +38,7 @@ export default function DashboardHeader() {
           {/* Profile */}
           <div className="flex items-center gap-3 px-2 py-1.5 bg-darkblue bg-opacity-50 rounded-2xl relative cursor-pointer" onClick={toggleDropdown}>
             <div className="bg-gray-300 w-6 h-6 rounded-full flex justify-center items-center font-semibold text-xs">
-              {(userDetails?.username || "O")[0].toUpperCase()}
+              {(username || "O")[0].toUpperCase()}
             </div>
             <img
               src="/down-arrow.png"

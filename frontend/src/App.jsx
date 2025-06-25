@@ -30,7 +30,8 @@ import TranscriptAnalysis from "./components/Check";
 import Profile from "./components/Dashboard/Profile";
 import Domain from "./components/Interview_Setting/Domain";
 import ComingSoon from "./components/Coming_soon";
-import Login from "./components/Login";
+import ConfirmEmail from "./components/Confirm_Mail";
+import EmailConfirmed from "./components/Email_Confirmed";
 
 function Logout() {
   localStorage.clear();
@@ -74,7 +75,8 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="domain" element={<Domain />} />
           <Route path="coming-soon" element={<ComingSoon />} />
-          <Route path="checklogin" element={<Login />} />
+          <Route path="confirm-email" element={<ConfirmEmail />} />
+          <Route path="confirmed" element={<EmailConfirmed />} />
         </Route>
       </Routes>
     </BrowserRouter>

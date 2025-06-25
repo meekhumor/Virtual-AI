@@ -19,35 +19,42 @@ export default function Resume() {
   };
 
   const handleUpload = async () => {
-    if (file) {
-      const reader = new FileReader();
-      
-      reader.onloadend = () => {
-        try {
-          // Store file content as plain text instead of DataURL for better compatibility
-          const fileContent = reader.result;
-          
-          // Store the text content of the resume
-          localStorage.setItem('resume', fileContent);
-          
-          // Also store the filename separately
-          localStorage.setItem('resumeFileName', fileName);
-          
-          console.log('Resume saved to localStorage');
-          alert('Resume uploaded successfully');
-          navigate('/cam-permission'); 
-        } catch (error) {
-          console.error('Error saving resume:', error);
-          setErrorMessage('Failed to process file. Please try again.');
-        }
-      };
-      
-      // Read as text instead of DataURL for PDF/DOCX content
-      reader.readAsText(file);
-    } else {
-      setErrorMessage('Please select a file first by clicking on the animation');
+    if (!file) {
+      setErrorMessage('Please select a file first');
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setErrorMessage("User not authenticated");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("resume", file); // ✅ correct key
+
+    try {
+      const response = await fetch("http://localhost:8000/api/resume/upload/", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Upload failed");
+
+      alert("Resume uploaded successfully");
+      console.log("Resume URL:", result.url);
+      navigate("/cam-permission");
+    } catch (err) {
+      console.error("Upload error:", err);
+      setErrorMessage(err.message);
+      alert(err.message); 
     }
   };
+
 
   return (
     <div className="mx-auto w-full max-w-xl flex flex-col gap-4 items-center bg-darkblue bg-opacity-40 py-14 my-28 rounded-3xl">
@@ -94,8 +101,6 @@ export default function Resume() {
           Upload
         </button>
       </div>
-
-      {errorMessage && <p className="mt-4 text-red-500">{errorMessage}</p>}
     </div>
   );
 }
