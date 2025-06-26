@@ -13,15 +13,22 @@ import { Editor } from "@monaco-editor/react";
 import SpeechRecognition, {
   useSpeechRecognition,
 } from "react-speech-recognition";
-import { X, Mic, Camera, Code, MessageSquare, Clock, TrendingUp, HelpCircle } from 'lucide-react';
+import {
+  X,
+  Mic,
+  Camera,
+  Code,
+  MessageSquare,
+  Clock,
+  TrendingUp,
+  HelpCircle,
+} from "lucide-react";
 
-// Simple function to strip Markdown bold markers
 const stripMarkdown = (text) => {
-  return text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/[#*_`]/g, '');
+  return text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[#*_`]/g, "");
 };
 
-// Define the API base URL based on environment
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = "http://localhost:8000";
 
 export default function Interview_Simulator() {
   const videoRef = useRef(null);
@@ -34,11 +41,11 @@ export default function Interview_Simulator() {
   const [showInfo, setShowInfo] = useState(true);
   const { transcript, listening, resetTranscript } = useSpeechRecognition();
   const [text, setText] = useState("");
-  const [timeLeft, setTimeLeft] = useState(1200); 
+  const [timeLeft, setTimeLeft] = useState(1200);
   const [isRunning, setIsRunning] = useState(false);
   const [level, setLevel] = useState("ENTRY");
   const [mode, setMode] = useState("PRACTICE");
-  const [duration, setDuration] = useState(1200); // Default to 20 minutes
+  const [duration, setDuration] = useState(1200);
   const [micStartTime, setMicStartTime] = useState(null);
   const [shouldProcessTranscript, setShouldProcessTranscript] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -57,7 +64,6 @@ export default function Interview_Simulator() {
     if (storedLevel) setLevel(storedLevel);
     if (storedMode) setMode(storedMode);
 
-    // Start the interview
     startInterview();
   }, []);
 
@@ -74,7 +80,9 @@ export default function Interview_Simulator() {
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    return `${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${minutes.toString().padStart(2, "0")}:${secs
+      .toString()
+      .padStart(2, "0")}`;
   };
 
   useEffect(() => {
@@ -155,13 +163,14 @@ export default function Interview_Simulator() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${localStorage.getItem("token")}`, // Assuming token is stored in localStorage
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
           title: "General Interview",
           level: level,
           mode: mode,
           duration_seconds: duration,
+          resumeFileName: localStorage.getItem("resumeFileName"),
         }),
       });
 
@@ -180,7 +189,10 @@ export default function Interview_Simulator() {
       console.error("Error starting interview:", error.message);
       setTranscriptHistory((prevHistory) => [
         ...prevHistory,
-        { sender: "ai", text: "Sorry, I couldn't start the interview. Please try again." },
+        {
+          sender: "ai",
+          text: "Sorry, I couldn't start the interview. Please try again.",
+        },
       ]);
     }
   };
@@ -197,17 +209,29 @@ export default function Interview_Simulator() {
     ]);
 
     try {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
       const response = await fetch(
         `${API_BASE_URL}/api/interviews/${interviewId}/questions/${questions[currentQuestionIndex].id}/response/`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify({ text: inputMessage }),
+          body: JSON.stringify({
+            text: inputMessage,
+            video_url:
+              "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            resumeFileName:
+              localStorage.getItem("resumeFileName") || "resume.pdf",
+          }),
         }
       );
+      if (response.status === 429) {
+        console.log("Rate limit hit, retrying in 2s");
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+        return handleSendMessage(inputMessage);
+      }
 
       if (!response.ok) {
         throw new Error(`Error: ${response.statusText}`);
@@ -221,7 +245,6 @@ export default function Interview_Simulator() {
         { sender: "ai", text: aiFeedback },
       ]);
 
-      // Move to the next question if available
       if (currentQuestionIndex + 1 < questions.length) {
         setCurrentQuestionIndex((prev) => prev + 1);
         const nextQuestion = questions[currentQuestionIndex + 1].text;
@@ -241,7 +264,10 @@ export default function Interview_Simulator() {
       console.error("Error submitting response:", error.message);
       setTranscriptHistory((prevHistory) => [
         ...prevHistory,
-        { sender: "ai", text: "Sorry, I couldn't process your response. Please try again." },
+        {
+          sender: "ai",
+          text: "Sorry, I couldn't process your response. Please try again.",
+        },
       ]);
     }
   };

@@ -19,3 +19,10 @@ class InterviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Interview
         fields = ['id', 'title', 'scheduled_at', 'level', 'mode', 'duration_seconds', 'questions']
+
+class InterviewDetailSerializer(serializers.ModelSerializer):
+    questions = QuestionSerializer(many=True)
+
+    class Meta:
+        model = Interview
+        fields = ['id', 'title', 'level', 'mode', 'scheduled_at', 'duration_seconds', 'questions']

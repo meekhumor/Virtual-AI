@@ -123,3 +123,5 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ORIGIN_ALLOW_ALL = True  # Or specify domains with CORS_ORIGIN_WHITELIST
+
+MISTRAL_API_KEY = "V2xImgehuTQMtqkl0XpJgev5oKTKWRmu"

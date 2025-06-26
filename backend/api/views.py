@@ -1,17 +1,21 @@
 from rest_framework.views import APIView
-from rest_framework.response import Response
+from rest_framework.response import Response as DRFResponse
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-
-from .models import User, Resume, Interview, Question, Response as UserResponse
-from .serializers import InterviewSerializer
+from mimetypes import guess_type
+from django.utils import timezone
+import requests
+import pdfplumber
+from io import BytesIO
+from django.conf import settings
+from .models import User, Resume, Interview, Question, Response
+from .serializers import InterviewSerializer, ResponseSerializer, QuestionSerializer, InterviewDetailSerializer
 from .supabase_client import supabase
 from .auth import SupabaseJWTAuthentication
-
-from mimetypes import guess_type
-from datetime import datetime, timezone
-import jwt
-
+from time import sleep
+import json
+import re
+from rest_framework.generics import RetrieveAPIView
 
 class SignupView(APIView):
     def post(self, request):
@@ -35,7 +39,7 @@ class SignupView(APIView):
                 password=password
             )
 
-            return Response({
+            return DRFResponse({
                 "message": "User created. Please confirm your email.",
                 "user": {
                     "email": user.email,
@@ -44,8 +48,7 @@ class SignupView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+            return DRFResponse({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class LoginView(APIView):
     def post(self, request):
@@ -58,9 +61,9 @@ class LoginView(APIView):
                 "password": password
             })
 
-            user = User.objects.get(email=email)  # from Django DB
+            user = User.objects.get(email=email)
 
-            return Response({
+            return DRFResponse({
                 "token": response.session.access_token,
                 "user": {
                     "email": user.email,
@@ -69,8 +72,7 @@ class LoginView(APIView):
             }, status=status.HTTP_200_OK)
 
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
+            return DRFResponse({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class ResumeUploadView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
@@ -81,7 +83,7 @@ class ResumeUploadView(APIView):
         user = request.user
 
         if not file:
-            return Response({"error": "No file provided"}, status=400)
+            return DRFResponse({"error": "No file provided"}, status=400)
 
         try:
             file_path = f"resumes/{user.supabase_id}/{file.name}"
@@ -91,16 +93,19 @@ class ResumeUploadView(APIView):
             response = supabase.storage.from_("resumes").upload(file_path, file.read(), options)
 
             if hasattr(response, 'error') and response.error:
-                return Response({"error": str(response.error)}, status=500)
+                return DRFResponse({"error": str(response.error)}, status=500)
 
             file_url = supabase.storage.from_("resumes").get_public_url(file_path)
             Resume.objects.create(user=user, email=user.email, file_url=file_url)
 
-            return Response({"message": "Resume uploaded", "url": file_url}, status=201)
+            return DRFResponse({
+                "message": "Resume uploaded",
+                "url": file_url,
+                "filename": file.name
+            }, status=201)
 
         except Exception as e:
-            return Response({"error": str(e)}, status=500)
-
+            return DRFResponse({"error": str(e)}, status=500)
 
 class InterviewCreateView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
@@ -129,8 +134,25 @@ class InterviewCreateView(APIView):
             Question.objects.create(interview=interview, text=q, order=i)
 
         serializer = InterviewSerializer(interview)
-        return Response(serializer.data, status=201)
+        return DRFResponse(serializer.data, status=201)
 
+class InterviewDetailView(RetrieveAPIView):
+    queryset = Interview.objects.all()
+    serializer_class = InterviewDetailSerializer
+    authentication_classes = [SupabaseJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Only allow access to interviews created by the logged-in user
+        return Interview.objects.filter(user=self.request.user)
+    
+    def delete(self, request, pk):
+        try:
+            interview = Interview.objects.get(pk=pk, user=request.user)
+            interview.delete()
+            return DRFResponse({"message": "Interview deleted."}, status=204)
+        except Interview.DoesNotExist:
+            return DRFResponse({"error": "Interview not found."}, status=404)
 
 class InterviewListView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
@@ -139,50 +161,145 @@ class InterviewListView(APIView):
     def get(self, request):
         interviews = Interview.objects.filter(user=request.user)
         serializer = InterviewSerializer(interviews, many=True)
-        return Response(serializer.data)
-
-
+        return DRFResponse(serializer.data)
 class SubmitResponseView(APIView):
+    authentication_classes = [SupabaseJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request, interview_id, question_id):
+        user = request.user
+
         try:
-            interview = Interview.objects.get(id=interview_id)
-            question = Question.objects.get(id=question_id)
-        except (Interview.DoesNotExist, Question.DoesNotExist):
-            return Response({"detail": "Interview or Question not found"}, status=404)
+            interview = Interview.objects.get(id=interview_id, user=user)
+            question = Question.objects.get(id=question_id, interview=interview)
+        except Interview.DoesNotExist:
+            return DRFResponse({'detail': 'Interview not found.'}, status=404)
+        except Question.DoesNotExist:
+            return DRFResponse({'detail': 'Question not found.'}, status=404)
 
-        text = request.data.get("text")
+        text = request.data.get('text')
         if not text:
-            return Response({"detail": "Text is required"}, status=400)
+            return DRFResponse({'detail': 'Response text is required.'}, status=400)
 
-        response = UserResponse.objects.create(
-            interview=interview,
-            question=question,
-            text=text,
-        )
-        return Response({"id": response.id, "text": response.text}, status=201)
+        # Fetch resume dynamically
+        resume_text = ""
+        resume_filename = request.data.get('resumeFileName')
+        try:
+            if resume_filename:
+                resume_url = supabase.storage.from_("resumes").get_public_url(f"resumes/{user.supabase_id}/{resume_filename}")
+                resume_response = requests.get(resume_url)
+                if resume_response.status_code == 200:
+                    with pdfplumber.open(BytesIO(resume_response.content)) as pdf:
+                        resume_text = "".join(page.extract_text() or "" for page in pdf.pages)[:3000]
+                else:
+                    print(f"Failed to fetch resume {resume_filename}: {resume_response.status_code}")
+            else:
+                resume = Resume.objects.filter(user=user).order_by('-created_at').first()
+                if resume:
+                    resume_response = requests.get(resume.file_url)
+                    if resume_response.status_code == 200:
+                        with pdfplumber.open(BytesIO(resume_response.content)) as pdf:
+                            resume_text = "".join(page.extract_text() or "" for page in pdf.pages)[:3000]
+                    else:
+                        print(f"Failed to fetch resume: {resume_response.status_code}")
+                else:
+                    print("No resume found for user")
+        except Exception as e:
+            print(f"Error fetching resume: {e}")
 
+        # Generate AI feedback and next question
+        prompt = f"""
+You are an expert interviewer conducting a {interview.level.lower()} level {interview.mode.lower()} interview.
+The user's resume contains: {resume_text or 'No resume provided.'}
+The user was asked: "{question.text}"
+Their response was: "{text}"
+Provide concise feedback on the response and generate one relevant follow-up question.
+Format the output as JSON:
+{{
+    "feedback": "<feedback>",
+    "next_question": "<question>"
+}}
+"""
+
+        feedback = "Good response, but please elaborate further."
+        next_question_text = "Can you provide more details?"
+
+        try:
+            for attempt in range(3):
+                response = requests.post(
+                    "https://api.mistral.ai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.MISTRAL_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "mistral-large-latest",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 200
+                    }
+                )
+                if response.status_code == 429:
+                    print(f"Rate limit hit, retrying in {2 ** attempt}s")
+                    sleep(2 ** attempt)
+                    continue
+                response.raise_for_status()
+
+                raw_content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "{}").strip()
+                print("Raw Mistral response:", raw_content)
+
+                # Strip code block formatting
+                if raw_content.startswith("```"):
+                    raw_content = re.sub(r"^```(?:json)?\n?", "", raw_content)
+                    raw_content = re.sub(r"```$", "", raw_content)
+
+                try:
+                    ai_data = json.loads(raw_content)
+                    feedback = ai_data.get("feedback", feedback)
+                    next_question_text = ai_data.get("next_question", next_question_text)
+                except json.JSONDecodeError as e:
+                    print(f"JSON decode error: {e}")
+                break
+            else:
+                print("Max retries reached for Mistral API")
+        except requests.exceptions.RequestException as e:
+            print(f"Mistral API request error: {str(e)}")
+
+        # Save response and generate next question
+        try:
+            response_obj = Response.objects.create(
+                interview=interview,
+                question=question,
+                text=text,
+                ai_feedback=feedback,
+                video_url=request.data.get('video_url', '')
+            )
+            next_order = question.order + 1
+            next_question = Question.objects.create(
+                interview=interview,
+                text=next_question_text,
+                order=next_order
+            )
+            serializer = ResponseSerializer(response_obj)
+            return DRFResponse({
+                "response": serializer.data,
+                "next_question": QuestionSerializer(next_question).data
+            }, status=201)
+        except Exception as e:
+            return DRFResponse({'detail': f'Failed to save response or question: {str(e)}'}, status=500)
 
 class StartInterviewView(APIView):
+    authentication_classes = [SupabaseJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
-        auth_header = request.headers.get('Authorization')
-        if not auth_header or not auth_header.startswith('Bearer '):
-            return Response({'detail': 'Authentication credentials were not provided.'}, status=401)
-
-        token = auth_header.split(' ')[1]
-        try:
-            decoded = jwt.decode(token, options={"verify_signature": False})
-            supabase_id = decoded.get('sub')
-            user = User.objects.get(supabase_id=supabase_id)
-        except Exception as e:
-            return Response({'detail': f'Invalid token: {str(e)}'}, status=401)
-
+        user = request.user
         title = request.data.get('title')
         level = request.data.get('level')
         mode = request.data.get('mode')
         duration = request.data.get('duration_seconds')
 
         if not all([title, level, mode, duration]):
-            return Response({'detail': 'Missing interview details.'}, status=400)
+            return DRFResponse({'detail': 'Missing interview details.'}, status=400)
 
         interview = Interview.objects.create(
             user=user,
@@ -190,17 +307,82 @@ class StartInterviewView(APIView):
             level=level,
             mode=mode,
             duration_seconds=duration,
-            scheduled_at=datetime.now()
+            scheduled_at=timezone.now()
         )
 
-        dummy_questions = [
-            "What is React and how does it differ from other frameworks?",
-            "Can you explain how the virtual DOM works in React?",
-            "What are props and state in React? How do they differ?"
-        ]
+        # Fetch resume dynamically
+        resume_text = ""
+        resume_filename = request.data.get('resumeFileName')
+        try:
+            if resume_filename:
+                resume_url = supabase.storage.from_("resumes").get_public_url(
+                    f"resumes/{user.supabase_id}/{resume_filename}"
+                )
+                resume_response = requests.get(resume_url)
+                if resume_response.status_code == 200:
+                    with pdfplumber.open(BytesIO(resume_response.content)) as pdf:
+                        resume_text = "".join(page.extract_text() or "" for page in pdf.pages)[:3000]
+                else:
+                    print(f"Failed to fetch resume {resume_filename}: {resume_response.status_code}")
+            else:
+                resume = Resume.objects.filter(user=user).order_by('-created_at').first()
+                if resume:
+                    resume_response = requests.get(resume.file_url)
+                    if resume_response.status_code == 200:
+                        with pdfplumber.open(BytesIO(resume_response.content)) as pdf:
+                            resume_text = "".join(page.extract_text() or "" for page in pdf.pages)[:3000]
+                    else:
+                        print(f"Failed to fetch resume: {resume_response.status_code}")
+                else:
+                    print("No resume found for user")
+        except Exception as e:
+            print(f"Error fetching resume: {e}")
 
-        for i, q in enumerate(dummy_questions, start=1):
-            Question.objects.create(interview=interview, text=q, order=i)
+        # Generate question using Mistral API
+        prompt = f"""
+You are an expert interviewer conducting a {level.lower()} level {mode.lower()} interview.
+The user's resume contains: {resume_text or 'No resume provided.'}
+Generate one relevant interview question based on the resume and the interview level/mode.
+Ensure the question is clear, concise, and appropriate for the context.
+"""
 
+        try:
+            for attempt in range(3):
+                response = requests.post(
+                    "https://api.mistral.ai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.MISTRAL_API_KEY}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "mistral-large-latest",
+                        "messages": [{"role": "user", "content": prompt}],
+                        "max_tokens": 150
+                    }
+                )
+                if response.status_code == 429:
+                    print(f"Rate limit hit, retrying in {2 ** attempt}s")
+                    sleep(2 ** attempt)
+                    continue
+                response.raise_for_status()
+
+                # Extract raw content
+                raw_content = response.json().get("choices", [{}])[0].get("message", {}).get("content", "Tell me about yourself.").strip()
+
+                # Clean up markdown and extract quoted question or fallback
+                match = re.search(r'["“](.+?)["”]', raw_content, re.DOTALL)
+                question_text = match.group(1).strip() if match else raw_content.replace("**Question:**", "").strip()
+                break
+            else:
+                raise Exception("Max retries reached for Mistral API")
+        except requests.exceptions.HTTPError as e:
+            print(f"Mistral API HTTP error: {e.response.status_code} - {e.response.text}")
+            question_text = "Tell me about yourself."
+        except requests.exceptions.RequestException as e:
+            print(f"Mistral API request error: {str(e)}")
+            question_text = "Tell me about yourself."
+
+        # Save the first question
+        Question.objects.create(interview=interview, text=question_text, order=1)
         serializer = InterviewSerializer(interview)
-        return Response(serializer.data, status=201)
+        return DRFResponse(serializer.data, status=201)

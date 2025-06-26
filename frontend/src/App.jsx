@@ -70,7 +70,7 @@ function App() {
           <Route path="acknowledgement" element={<Acknowledgement />} />
           <Route path="support" element={<Support />} />
           <Route path="*" element={<NotFound />} />
-          <Route path="review" element={<Review_Interface />} />
+          <Route path="review/:interviewId" element={<Review_Interface />} />
           <Route path="check" element={<TranscriptAnalysis />} />
           <Route path="profile" element={<Profile />} />
           <Route path="domain" element={<Domain />} />
