@@ -20,12 +20,6 @@ function ReviewCard({ id, title, level, mode, time, day, onDelete, onShare }) {
         <div className="flex items-center gap-3">
           <button
             className="p-2 hover:bg-darkblue/50 rounded-full transition-colors"
-            onClick={() => onShare(id)}
-          >
-            <img src="/share.svg" className="w-5 h-5" alt="Share" />
-          </button>
-          <button
-            className="p-2 hover:bg-darkblue/50 rounded-full transition-colors"
             onClick={() => onDelete(id)}
           >
             <img src="/delete.svg" className="w-5 h-5" alt="Delete" />
@@ -89,16 +83,6 @@ export default function Review_Interview() {
     }
   };
 
-  const handleShare = async (id) => {
-    try {
-      const shareURL = `${window.location.origin}/review/${id}`;
-      await navigator.clipboard.writeText(shareURL);
-      alert("Link copied to clipboard!");
-    } catch (error) {
-      console.error("Share failed:", error);
-      alert("Failed to copy link.");
-    }
-  };
 
   return (
     <div className="mx-auto w-full max-w-3xl mb-44">
@@ -135,7 +119,6 @@ export default function Review_Interview() {
               time={Math.round(item.duration_seconds / 60)}
               day={Math.round((Date.now() - new Date(item.scheduled_at)) / (1000 * 60 * 60 * 24))}
               onDelete={handleDelete}
-              onShare={handleShare}
             />
 
           ))

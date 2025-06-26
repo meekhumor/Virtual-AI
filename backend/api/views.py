@@ -162,6 +162,7 @@ class InterviewListView(APIView):
         interviews = Interview.objects.filter(user=request.user)
         serializer = InterviewSerializer(interviews, many=True)
         return DRFResponse(serializer.data)
+    
 class SubmitResponseView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
     permission_classes = [IsAuthenticated]
