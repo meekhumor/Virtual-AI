@@ -8,7 +8,7 @@ import requests
 import pdfplumber
 from io import BytesIO
 from django.conf import settings
-from .models import User, Resume, Interview, Question, Response
+from .models import User, Resume, Interview, Question, Response as InterviewResponse  # Use alias for model
 from .serializers import InterviewSerializer, ResponseSerializer, QuestionSerializer, InterviewDetailSerializer
 from .supabase_client import supabase
 from .auth import SupabaseJWTAuthentication
@@ -17,6 +17,81 @@ import json
 import re
 from rest_framework.generics import RetrieveAPIView
 
+class ProfileView(APIView):
+    authentication_classes = [SupabaseJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return DRFResponse({
+            "email": user.email,
+            "username": user.username,
+            "profile_image_url": user.profile_image_url
+        }, status=200)
+    
+class ProfileImageUploadView(APIView):
+    authentication_classes = [SupabaseJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        image = request.FILES.get("image")
+
+        if not image:
+            return DRFResponse({"error": "No image provided"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            file_path = f"{user.supabase_id}/{image.name}"
+            mime_type, _ = guess_type(image.name)
+            options = {"content-type": mime_type or "image/jpeg"}
+
+            # Upload to Supabase bucket
+            response = supabase.storage.from_("profile-images").upload(
+                file_path, image.read(), options
+            )
+
+            if hasattr(response, 'error') and response.error:
+                return DRFResponse(
+                    {"error": str(response.error)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+            # Get public URL
+            public_url = supabase.storage.from_("profile-images").get_public_url(file_path)
+
+            # Save public image URL to user model
+            user.profile_image_url = public_url
+            user.save()
+
+            return DRFResponse({
+                "message": "Image uploaded successfully",
+                "url": public_url
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return DRFResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class UpdateProfileView(APIView):
+    authentication_classes = [SupabaseJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request):
+        user = request.user
+        new_username = request.data.get("username")
+
+        if not new_username:
+            return DRFResponse({"error": "Username required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Optional: Add validation for username (e.g., uniqueness, format)
+        if User.objects.filter(username=new_username).exclude(id=user.id).exists():
+            return DRFResponse({"error": "Username already taken."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user.username = new_username
+            user.save()
+            return DRFResponse({"message": "Username updated successfully."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return DRFResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 class SignupView(APIView):
     def post(self, request):
         email = request.data.get('email')

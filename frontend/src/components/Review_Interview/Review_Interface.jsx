@@ -62,7 +62,7 @@ const Review_Interface = () => {
       <div className="w-2/3 p-6 py-12">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <Link to="/review-interview" className="text-gray-400 hover:text-gray-200 text-sm">&lt; Back to Dashboard</Link>
+          <Link to="/review-interview" className="text-gray-400 hover:text-gray-200 text-sm">&lt; Back to Review</Link>
         </div>
 
         {/* Interview Metadata */}
@@ -108,7 +108,7 @@ const Review_Interface = () => {
               <Brain className="w-6 h-6 text-white mr-2" />
               <span className="text-white text-2xl">AI Powered Feedback</span>
             </div>
-            <p className="text-gray-400 text-center mb-6 text-sm">
+            <p className="text-gray-400 mx-auto mb-6">
               {currentQuestion.response.ai_feedback}
             </p>
           </div>

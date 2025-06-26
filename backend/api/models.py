@@ -22,6 +22,7 @@ class UserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=255, unique=True)
+    profile_image_url = models.URLField(blank=True, null=True)
     supabase_id = models.CharField(max_length=36, unique=True, null=True)  # Supabase UUID
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
