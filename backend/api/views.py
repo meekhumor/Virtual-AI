@@ -16,6 +16,9 @@ from time import sleep
 import json
 import re
 from rest_framework.generics import RetrieveAPIView
+import os
+
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
 
 class ProfileView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
@@ -103,7 +106,7 @@ class SignupView(APIView):
                 "email": email,
                 "password": password,
                 "options": {
-                    "email_redirect_to": "http://localhost:5173/confirmed"
+                    "email_redirect_to": f"{settings.FRONTEND_URL}/confirm-email"  # Dynamic: uses FRONTEND_URL + your route
                 }
             })
 
