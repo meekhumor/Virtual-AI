@@ -16,9 +16,9 @@ from time import sleep
 import json
 import re
 from rest_framework.generics import RetrieveAPIView
-import os
+from django.conf import settings
 
-FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+FRONTEND_URL = settings.FRONTEND_URL 
 
 class ProfileView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]

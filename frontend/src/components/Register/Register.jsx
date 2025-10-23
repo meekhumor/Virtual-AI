@@ -22,7 +22,6 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
   // Vite env var access with fallback (note: include /api in the fetch URL if needed)
@@ -31,7 +30,6 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage("");
 
     try {
       const signupResponse = await fetch(`${apiBaseUrl}/api/signup/`, {
@@ -52,7 +50,6 @@ export default function Register() {
 
       navigate("/confirm-email");
     } catch (err) {
-      setErrorMessage(err.message);
       alert(err.message); 
     } finally {
       setLoading(false);
@@ -126,9 +123,6 @@ export default function Register() {
             </Link>
           </div>
         </form>
-        {errorMessage && (
-          <p className="text-red-400 text-sm mt-2">{errorMessage}</p>
-        )}
       </div>
     </div>
   );
