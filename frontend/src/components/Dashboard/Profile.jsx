@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Camera, Edit2, Save, Award, Clock, BarChart2 } from "lucide-react";
 
-const API_BASE_URL = "http://localhost:8000";
-
 const Profile = () => {
   const token = localStorage.getItem("token");
 
@@ -13,10 +11,13 @@ const Profile = () => {
   const [profileImage, setProfileImage] = useState(null); // Preview only
   const [profileImageUrl, setProfileImageUrl] = useState(null); // From server
 
+  // Vite env var access with fallback
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/`, {
+        const res = await fetch(`${apiBaseUrl}/api/profile/`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -41,7 +42,7 @@ const Profile = () => {
 
   const saveChanges = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/profile/update/`, {
+      const res = await fetch(`${apiBaseUrl}/api/profile/update/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -69,7 +70,7 @@ const Profile = () => {
     formData.append("image", file);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/profile/image/`, {
+      const res = await fetch(`${apiBaseUrl}/api/profile/image/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

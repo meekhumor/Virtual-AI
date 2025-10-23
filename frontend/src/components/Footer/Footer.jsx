@@ -20,7 +20,7 @@ export default function Footer() {
 
       <div className="footer-icons flex gap-6 justify-center">
         <a
-          href="https://www.linkedin.com/in/your-profile"
+          href="https://www.linkedin.com/"
           target="_blank"
           rel="noopener noreferrer"
           className="transition-transform transform hover:scale-110"

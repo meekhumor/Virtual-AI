@@ -19,7 +19,7 @@ import About from "./components/Home/About";
 import Contact from "./components/Home/Contact";
 import Courses from "./components/Courses/Courses";
 import Practice from "./components/Practice/Practice";
-import Email_Verification from "./components/Email_Verification/Email_Verification";
+import Email_Verification from "./components/Email/Email_Verification";
 import Interview_Setting from "./components/Interview_Setting/Interview_Setting";
 import Interview_Simulator from "./components/Interview_Simulator/Interview_Simulator";
 import Animation from "./components/Animation";
@@ -30,8 +30,8 @@ import TranscriptAnalysis from "./components/Check";
 import Profile from "./components/Dashboard/Profile";
 import Domain from "./components/Interview_Setting/Domain";
 import ComingSoon from "./components/Coming_soon";
-import ConfirmEmail from "./components/Confirm_Mail";
-import EmailConfirmed from "./components/Email_Confirmed";
+import ConfirmEmail from "./components/Email/Confirm_Mail";
+import EmailConfirmed from "./components/Email/Email_Confirmed";
 
 function Logout() {
   localStorage.clear();

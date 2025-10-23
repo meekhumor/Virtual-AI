@@ -28,8 +28,6 @@ const stripMarkdown = (text) => {
   return text.replace(/\*\*(.*?)\*\*/g, "$1").replace(/[#*_`]/g, "");
 };
 
-const API_BASE_URL = "http://localhost:8000";
-
 export default function Interview_Simulator() {
   const videoRef = useRef(null);
   const [micStatus, setMicStatus] = useState(false);
@@ -51,6 +49,9 @@ export default function Interview_Simulator() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [interviewId, setInterviewId] = useState(null);
   const [questions, setQuestions] = useState([]);
+
+  // Vite env var access with fallback
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const storedTime = sessionStorage.getItem("interviewTime");
@@ -159,7 +160,7 @@ export default function Interview_Simulator() {
 
   const startInterview = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/interviews/start/`, {
+      const response = await fetch(`${apiBaseUrl}/api/interviews/start/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -211,7 +212,7 @@ export default function Interview_Simulator() {
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       const response = await fetch(
-        `${API_BASE_URL}/api/interviews/${interviewId}/questions/${questions[currentQuestionIndex].id}/response/`,
+        `${apiBaseUrl}/api/interviews/${interviewId}/questions/${questions[currentQuestionIndex].id}/response/`,
         {
           method: "POST",
           headers: {

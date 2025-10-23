@@ -11,6 +11,9 @@ export default function Resume() {
   const [isUploading, setIsUploading] = useState(false);
   const navigate = useNavigate();
 
+  // Vite env var access with fallback
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
     const ext = selectedFile?.name?.split('.').pop().toLowerCase();
@@ -45,7 +48,7 @@ export default function Resume() {
 
     setIsUploading(true);
     try {
-      const response = await fetch("http://localhost:8000/api/resume/upload/", {
+      const response = await fetch(`${apiBaseUrl}/api/resume/upload/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Search, ChevronDown } from 'lucide-react';
 import { Link } from "react-router-dom";
 
-const API_BASE_URL = 'http://localhost:8000';
-
 function ReviewCard({ id, title, level, mode, time, day, onDelete, onShare }) {
   return (
     <div className="transition-all duration-200">
@@ -33,16 +31,18 @@ function ReviewCard({ id, title, level, mode, time, day, onDelete, onShare }) {
   );
 }
 
-
 export default function Review_Interview() {
   const [searchQuery, setSearchQuery] = useState("");
   const [interviews, setInterviews] = useState([]);
+
+  // Vite env var access with fallback
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
   useEffect(() => {
     const fetchData = async () => {
       const token = localStorage.getItem("token");
       try {
-        const res = await fetch(`${API_BASE_URL}/api/interviews/`, {
+        const res = await fetch(`${apiBaseUrl}/api/interviews/`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -61,12 +61,12 @@ export default function Review_Interview() {
   );
 
   const handleDelete = async (id) => {
-  const confirmed = window.confirm("Are you sure you want to delete this interview?");
-  if (!confirmed) return;
+    const confirmed = window.confirm("Are you sure you want to delete this interview?");
+    if (!confirmed) return;
 
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
     try {
-      const res = await fetch(`${API_BASE_URL}/api/interviews/${id}/`, {
+      const res = await fetch(`${apiBaseUrl}/api/interviews/${id}/`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -82,7 +82,6 @@ export default function Review_Interview() {
       alert("Failed to delete interview.");
     }
   };
-
 
   return (
     <div className="mx-auto w-full max-w-3xl mb-44">
@@ -120,7 +119,6 @@ export default function Review_Interview() {
               day={Math.round((Date.now() - new Date(item.scheduled_at)) / (1000 * 60 * 60 * 24))}
               onDelete={handleDelete}
             />
-
           ))
         )}
       </div>

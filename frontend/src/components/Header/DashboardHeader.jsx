@@ -1,8 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
 
-const API_BASE_URL = "http://localhost:8000";
-
 export default function DashboardHeader() {
   const token = localStorage.getItem("token");
   const [username, setUsername] = useState("User");
@@ -10,10 +8,13 @@ export default function DashboardHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
+  // Vite env var access with fallback
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}/api/profile/`, {
+        const res = await fetch(`${apiBaseUrl}/api/profile/`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

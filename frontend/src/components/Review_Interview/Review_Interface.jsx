@@ -2,18 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Brain } from 'lucide-react';
 
-const API_BASE_URL = "http://localhost:8000";
-
 const Review_Interface = () => {
   const [questions, setQuestions] = useState([]);
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0);
   const [interviewMeta, setInterviewMeta] = useState(null);
   const { interviewId } = useParams();
 
+  // Vite env var access with fallback
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
   useEffect(() => {
     const fetchInterview = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/interviews/${interviewId}/`, {
+        const response = await fetch(`${apiBaseUrl}/api/interviews/${interviewId}/`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },

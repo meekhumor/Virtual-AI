@@ -2,8 +2,6 @@ import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import CardSign from "./CardSign";
 
-const API_BASE = "http://localhost:8000/api";
-
 const signup = [
   {
     title: "Put on the pressure",
@@ -27,13 +25,16 @@ export default function Register() {
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
+  // Vite env var access with fallback (note: include /api in the fetch URL if needed)
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage("");
 
     try {
-      const signupResponse = await fetch(`${API_BASE}/signup/`, {
+      const signupResponse = await fetch(`${apiBaseUrl}/api/signup/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, username, password }),
@@ -57,6 +58,7 @@ export default function Register() {
       setLoading(false);
     }
   };
+
   return (
     <div className="w-full max-w-5xl flex mx-auto h-full mt-16">
       {/* Left */}
@@ -124,6 +126,9 @@ export default function Register() {
             </Link>
           </div>
         </form>
+        {errorMessage && (
+          <p className="text-red-400 text-sm mt-2">{errorMessage}</p>
+        )}
       </div>
     </div>
   );
