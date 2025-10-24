@@ -7,7 +7,8 @@ const LoginModal = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
-
+  
+  console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
   // Vite env var access with fallback
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
