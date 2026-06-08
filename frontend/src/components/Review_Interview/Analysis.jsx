@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 const Analysis = () => {
+  const [searchParams] = useSearchParams();
+  const interviewId = searchParams.get('interviewId');
+
+  const [analysis, setAnalysis] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const token = localStorage.getItem('token');
 
   const improvementTips = {
     "Pace": [
@@ -10,257 +20,300 @@ const Analysis = () => {
       "Practice with a metronome set to 150-160 BPM",
       "Record yourself and count words per minute",
       "Use natural pauses after key points",
-      "Aim for 150-160 words per minute"
+      "Aim for 150-160 words per minute",
     ],
     "Filler Words": [
       "Record and count your filler words",
       "Practice replacing 'um' with pauses",
       "Plan your key points beforehand",
       "Take a moment to think before speaking",
-      "Use structured transitions instead"
+      "Use structured transitions instead",
     ],
     "Power Words": [
       "Use action verbs",
       "Include industry-specific terminology",
       "Incorporate quantifiable achievements",
       "Use positive, confident language",
-      "Add relevant technical terms"
+      "Add relevant technical terms",
     ],
-    "Negative Tone": [
-      "Focus on solutions, not problems",
-      "Use positive framing",
-      "Highlight opportunities in challenges",
-      "Express confidence in abilities",
-      "Share enthusiasm for the role"
+    "Communication": [
+      "Structure answers using STAR method",
+      "Be concise and direct",
+      "Avoid over-explaining",
+      "Use clear, specific examples",
+      "Practice active listening",
     ],
-    "Pauses": [
-      "Practice strategic pausing",
-      "Use pauses for emphasis",
-      "Take breaths between points",
-      "Allow time for information absorption",
-      "Create rhythm in your speech"
+    "Technical": [
+      "Review core concepts regularly",
+      "Practice explaining complex ideas simply",
+      "Use correct terminology",
+      "Walk through your reasoning",
+      "Ask clarifying questions when unsure",
     ],
-    "Eye Contact": [
-      "Look directly at the camera",
-      "Practice with a friend online",
-      "Position your camera at eye level",
-      "Minimize screen distractions",
-      "Use the 50/70 rule - maintain contact 50-70% of the time"
+    "Confidence": [
+      "Practice with mock interviews",
+      "Prepare and rehearse key stories",
+      "Use positive body language",
+      "Speak at a steady pace",
+      "Remember it's a conversation, not a test",
     ],
-    "Lighting": [
-      "Face natural light if possible",
-      "Use ring light for even illumination",
-      "Avoid backlighting",
-      "Position light source in front",
-      "Test lighting before interviews"
-    ]
   };
 
-  const metrics = [
-    {
-      title: "Pace",
-      value: 246,
-      unit: "words/min",
-      status: "error",
-      successMessage: "Your pace is just right! Keep up the steady rhythm.",
-      errorMessage: "You're speaking too fast. Try to slow down for better clarity.",
-      icon: "analysis/pace.svg"
-    },
-    {
-      title: "Filler Words",
-      value: 5,
-      unit: "/100 words",
-      status: "success",
-      successMessage: "You're doing great with filler words. Keep it up!",
-      errorMessage: "Reduce filler words for a more concise answer.",
-      icon: "analysis/filler-words.svg"
-    },
-    {
-      title: "Power Words",
-      value: 0,
-      unit: "total",
-      status: "error",
-      successMessage: "Your answer is strong but could be enhanced with more impactful vocabulary.",
-      errorMessage: "This answer needs some charging up. Integrate powerful vocabulary if you can.",
-      icon: "analysis/power-words.svg"
-    },
-    {
-      title: "Negative Tone",
-      value: 0,
-      unit: "total",
-      status: "success",
-      successMessage: "No negative tone detected! Excellent work.",
-      errorMessage: "Watch out for negative language in your tone.",
-      icon: "analysis/sad.svg"
-    },
-    {
-      title: "Pauses",
-      value: 0,
-      unit: "total",
-      status: "success",
-      successMessage: "No pauses detected. You're maintaining a steady pace!",
-      errorMessage: "Make sure to pause occasionally to collect your thoughts.",
-      icon: "analysis/pause.svg"
-    },
-    {
-      title: "Eye Contact",
-      value: 85,
-      unit: "%",
-      status: "success",
-      successMessage: "Great audience engagement! Keep maintaining strong eye contact.",
-      errorMessage: "Make more eye contact with your audience for better connection.",
-      icon: "analysis/eye.svg"
-    },
-    {
-      title: "Lighting",
-      isQualitative: true,
-      value: "Good",
-      status: "success",
-      successMessage: "Perfect lighting conditions for clear visibility.",
-      errorMessage: "The lighting could be improved for clearer visibility.",
-      icon: "analysis/bulb.svg",
+  const fetchAnalysis = async () => {
+    if (!interviewId) {
+      setError('No interview ID provided. Please navigate from an interview session.');
+      return;
     }
-  ];
 
-  const getValueDisplay = (metric) => {
-    if (metric.isQualitative) {
-      return (
-        <span className={`px-3 py-1 rounded-full text-sm ${
-          metric.status === 'success' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-400'
-        }`}>
-          {metric.value}
-        </span>
-      );
+    setLoading(true);
+    setError(null);
+
+    // Try GET first (cached result)
+    try {
+      const getRes = await fetch(`${apiBaseUrl}/api/interviews/${interviewId}/analysis/`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (getRes.ok) {
+        const data = await getRes.json();
+        setAnalysis(data);
+        setLoading(false);
+        return;
+      }
+    } catch (_) {}
+
+    // Fall back to POST (generate new analysis)
+    try {
+      const postRes = await fetch(`${apiBaseUrl}/api/interviews/${interviewId}/analyze/`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (postRes.ok) {
+        const data = await postRes.json();
+        setAnalysis(data);
+      } else {
+        const errData = await postRes.json();
+        setError(errData.detail || 'Failed to generate analysis.');
+      }
+    } catch (e) {
+      setError('Network error. Please try again.');
     }
-    return (
-      <div className="flex items-center gap-2">
-        <span className={`text-2xl font-bold ${
-          metric.status === 'success' ? 'text-green-500' : 'text-red-500'
-        }`}>
-          {metric.value}
-        </span>
-        <span className="text-gray-400 text-sm">{metric.unit}</span>
-      </div>
-    );
+
+    setLoading(false);
   };
 
-  const handleImprove = (metric) => {
-    setSelectedMetric(metric);
-    setShowModal(true);
-  };
+  useEffect(() => {
+    if (interviewId) fetchAnalysis();
+  }, [interviewId]);
+
+  // Helper: score (0-10) → status
+  const scoreStatus = (score) => (score !== null && score >= 6 ? 'success' : 'error');
+
+  const scoreCard = (label, score, tipKey) => ({
+    title: label,
+    value: score !== null ? score.toFixed(1) : '—',
+    unit: '/ 10',
+    status: scoreStatus(score),
+    tipKey,
+  });
+
+  const metricCards = analysis
+    ? [
+        scoreCard('Overall Score', analysis.overall_score, null),
+        scoreCard('Communication', analysis.communication_score, 'Communication'),
+        scoreCard('Technical', analysis.technical_score, 'Technical'),
+        scoreCard('Confidence', analysis.confidence_score, 'Confidence'),
+        {
+          title: 'Pace',
+          value: analysis.pace_wpm !== null ? `${Math.round(analysis.pace_wpm)}` : '—',
+          unit: 'words/min',
+          status: analysis.pace_wpm && analysis.pace_wpm > 180 ? 'error' : 'success',
+          tipKey: 'Pace',
+        },
+        {
+          title: 'Filler Words',
+          value: analysis.filler_word_count !== null ? analysis.filler_word_count : '—',
+          unit: 'total',
+          status: analysis.filler_word_count > 5 ? 'error' : 'success',
+          tipKey: 'Filler Words',
+        },
+        {
+          title: 'Power Words',
+          value: analysis.power_word_count !== null ? analysis.power_word_count : '—',
+          unit: 'total',
+          status: analysis.power_word_count > 3 ? 'success' : 'error',
+          tipKey: 'Power Words',
+        },
+      ]
+    : [];
 
   return (
     <div className="min-h-screen bg-black mt-12 mb-20">
-      <div className="max-w-4xl mx-auto space-y-10">
+      <div className="max-w-4xl mx-auto space-y-10 px-4">
         <h1 className="text-white text-center text-2xl">AI Feedback</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {metrics.map((metric, index) => (
-            <div key={index} className="bg-darkblue bg-opacity-40 p-6 rounded-lg shadow-lg hover:scale-105 cursor-pointer transition-all duration-300">
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <span className={`text-3xl ${
-                    metric.status === 'success' ? 'text-green-500' : 'text-red-500'
-                  }`}>
-                    <img src={metric.icon} alt="" className="w-8" />
-                  </span>
-                  <h3 className="text-white text-lg font-semibold">{metric.title}</h3>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  {getValueDisplay(metric)}
-                </div>
-                
-                <div className="mt-2">
-                  <p className="text-gray-400 text-sm">
-                    {metric.status === 'success' ? metric.successMessage : metric.errorMessage}
-                  </p>
-                  {metric.status === 'error' && (
-                    <button 
-                      onClick={() => handleImprove(metric)}
-                      className="text-blue1 text-sm mt-4 hover:text-white rounded-full transition-colors px-4 py-1 border border-blue1 hover:bg-blue1 hover:bg-opacity-20"
-                    >
-                      IMPROVE
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
 
-        {/* Improvement Modal */}
-        {showModal && selectedMetric && (
-        <div 
-          className="fixed inset-0 bg-black/60  flex items-center justify-center z-10 px-4 transition-opacity duration-200"
-          onClick={() => setShowModal(false)}
-        >
-          <div 
-            className="bg-darkblue2 rounded-2xl p-8 max-w-lg w-full shadow-2xl transform transition-all duration-300 border border-blue1/20"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex justify-between items-start mb-8">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-blue1/10 rounded-xl">
-                  <img src={selectedMetric.icon} alt="" className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-white text-xl font-bold">
-                    Improve {selectedMetric.title}
-                  </h2>
-                </div>
+        {/* No interview ID */}
+        {!interviewId && (
+          <div className="text-center text-gray-400 py-20">
+            <p className="text-lg">No interview selected.</p>
+            <p className="text-sm mt-2">Navigate here from an interview session via the Analysis button.</p>
+          </div>
+        )}
+
+        {/* Loading */}
+        {loading && (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="w-12 h-12 border-4 border-blue1 border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-400">Generating AI analysis... this may take a moment.</p>
+          </div>
+        )}
+
+        {/* Error */}
+        {error && !loading && (
+          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6 text-center">
+            <p className="text-red-400 mb-4">{error}</p>
+            <button
+              onClick={fetchAnalysis}
+              className="bg-blue1 text-white px-6 py-2 rounded-lg hover:opacity-80 transition"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+
+        {/* Generate button (when no analysis yet and not loading) */}
+        {interviewId && !analysis && !loading && !error && (
+          <div className="text-center py-10">
+            <button
+              onClick={fetchAnalysis}
+              className="bg-blue1 text-white px-8 py-3 rounded-xl text-lg font-semibold hover:opacity-80 transition"
+            >
+              Generate Analysis
+            </button>
+          </div>
+        )}
+
+        {/* Analysis Results */}
+        {analysis && !loading && (
+          <>
+            {/* Summary */}
+            {analysis.summary && (
+              <div className="bg-darkblue bg-opacity-40 p-6 rounded-lg shadow-lg">
+                <h2 className="text-white text-lg font-semibold mb-2">Summary</h2>
+                <p className="text-gray-300">{analysis.summary}</p>
               </div>
-              <button 
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-white transition-all duration-200 p-2 hover:bg-white/5 rounded-lg"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-            
-            {/* Content */}
-            <div className="space-y-4 relative">
-              <div className="absolute w-px h-full  left-2"></div>
-              {improvementTips[selectedMetric.title].map((tip, index) => (
-                <div 
-                  key={index} 
-                  className="flex items-start gap-4 pl-6 hover:bg-white/5 p-3 rounded-lg transition-all duration-200"
+            )}
+
+            {/* Metric cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {metricCards.map((metric, index) => (
+                <div
+                  key={index}
+                  className="bg-darkblue bg-opacity-40 p-6 rounded-lg shadow-lg hover:scale-105 cursor-pointer transition-all duration-300"
                 >
-                  <div className="text-blue1 mt-1 bg-darkblue p-1 rounded-full border border-blue1/20 hover:scale-110 transition-transform duration-200">
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                    </svg>
+                  <div className="flex flex-col gap-3">
+                    <h3 className="text-white text-lg font-semibold">{metric.title}</h3>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-2xl font-bold ${metric.status === 'success' ? 'text-green-500' : 'text-red-500'}`}>
+                        {metric.value}
+                      </span>
+                      <span className="text-gray-400 text-sm">{metric.unit}</span>
+                    </div>
+                    {metric.status === 'error' && metric.tipKey && (
+                      <button
+                        onClick={() => { setSelectedMetric(metric); setShowModal(true); }}
+                        className="text-blue1 text-sm mt-2 hover:text-white rounded-full transition-colors px-4 py-1 border border-blue1 hover:bg-blue1 hover:bg-opacity-20 w-fit"
+                      >
+                        IMPROVE
+                      </button>
+                    )}
                   </div>
-                  <p className="text-gray-300 hover:text-white transition-colors duration-200">{tip}</p>
                 </div>
               ))}
             </div>
 
-            {/* Footer */}
-            <div className="mt-8 flex justify-between items-center">
-              <div className="text-sm text-gray-400">
-                <span className="text-blue1">Tip:</span> Practice these regularly for better results
-              </div>
-              <button 
-                onClick={() => setShowModal(false)}
-                className="bg-blue1 text-white px-4 py-2 rounded-lg hover:bg-opacity-50 transition-all duration-200 flex items-center gap-2 group"
+            {/* Strengths & Improvements */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {analysis.strengths?.length > 0 && (
+                <div className="bg-darkblue bg-opacity-40 p-6 rounded-lg shadow-lg">
+                  <h2 className="text-white text-lg font-semibold mb-3">✅ Strengths</h2>
+                  <ul className="space-y-2">
+                    {analysis.strengths.map((s, i) => (
+                      <li key={i} className="text-gray-300 text-sm flex items-start gap-2">
+                        <span className="text-green-500 mt-1">•</span>{s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {analysis.improvements?.length > 0 && (
+                <div className="bg-darkblue bg-opacity-40 p-6 rounded-lg shadow-lg">
+                  <h2 className="text-white text-lg font-semibold mb-3">📈 Areas to Improve</h2>
+                  <ul className="space-y-2">
+                    {analysis.improvements.map((s, i) => (
+                      <li key={i} className="text-gray-300 text-sm flex items-start gap-2">
+                        <span className="text-yellow-400 mt-1">•</span>{s}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Re-generate */}
+            <div className="text-center">
+              <button
+                onClick={fetchAnalysis}
+                className="text-blue1 border border-blue1 px-6 py-2 rounded-lg hover:bg-blue1 hover:text-white transition"
               >
-                Got it
-                <svg 
-                  className="w-4 h-4 transform transition-transform duration-200 group-hover:translate-x-1" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M12 5l7 7-7 7" />
-                </svg>
+                Re-generate Analysis
               </button>
             </div>
+          </>
+        )}
+
+        {/* Improvement Modal */}
+        {showModal && selectedMetric && (
+          <div
+            className="fixed inset-0 bg-black/60 flex items-center justify-center z-10 px-4"
+            onClick={() => setShowModal(false)}
+          >
+            <div
+              className="bg-darkblue2 rounded-2xl p-8 max-w-lg w-full shadow-2xl border border-blue1/20"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-start mb-8">
+                <h2 className="text-white text-xl font-bold">Improve {selectedMetric.title}</h2>
+                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-white p-2">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="space-y-4">
+                {(improvementTips[selectedMetric.tipKey] || []).map((tip, index) => (
+                  <div key={index} className="flex items-start gap-4 pl-6 hover:bg-white/5 p-3 rounded-lg">
+                    <div className="text-blue1 mt-1 bg-darkblue p-1 rounded-full border border-blue1/20">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                    <p className="text-gray-300">{tip}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-8 flex justify-end">
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="bg-blue1 text-white px-4 py-2 rounded-lg hover:opacity-80"
+                >
+                  Got it
+                </button>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );

@@ -3,41 +3,56 @@ import { Camera, Edit2, Save, Award, Clock, BarChart2 } from "lucide-react";
 
 const Profile = () => {
   const token = localStorage.getItem("token");
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
-  const [username, setUsername] = useState("User");
-  const [email, setEmail] = useState("unknown@example.com");
+  const [username, setUsername] = useState("Guest");
+  const [email, setEmail] = useState("guest@gmail.com");
   const [editMode, setEditMode] = useState(false);
   const [newUsername, setNewUsername] = useState("User");
-  const [profileImage, setProfileImage] = useState(null); // Preview only
-  const [profileImageUrl, setProfileImageUrl] = useState(null); // From server
+  const [profileImage, setProfileImage] = useState(null);
+  const [profileImageUrl, setProfileImageUrl] = useState(null);
 
-  // Vite env var access with fallback
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  // Stats
+  const [stats, setStats] = useState(null);
+  const [recentInterviews, setRecentInterviews] = useState([]);
 
   useEffect(() => {
+    if (!token) return;
+
     const fetchProfile = async () => {
       try {
         const res = await fetch(`${apiBaseUrl}/api/profile/`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
-
         if (res.ok) {
           const data = await res.json();
           setUsername(data.username);
           setNewUsername(data.username);
           setEmail(data.email);
           setProfileImageUrl(data.profile_image_url);
-        } else {
-          console.error("Failed to fetch profile data");
         }
       } catch (err) {
         console.error("Error fetching profile:", err);
       }
     };
 
-    if (token) fetchProfile();
+    const fetchStats = async () => {
+      try {
+        const res = await fetch(`${apiBaseUrl}/api/profile/stats/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStats(data);
+          setRecentInterviews(data.recent_interviews || []);
+        }
+      } catch (err) {
+        console.error("Error fetching stats:", err);
+      }
+    };
+
+    fetchProfile();
+    fetchStats();
   }, [token]);
 
   const saveChanges = async () => {
@@ -50,12 +65,9 @@ const Profile = () => {
         },
         body: JSON.stringify({ username: newUsername }),
       });
-
       if (res.ok) {
         setUsername(newUsername);
         setEditMode(false);
-      } else {
-        console.error("Failed to update username");
       }
     } catch (err) {
       console.error("Error:", err);
@@ -65,29 +77,32 @@ const Profile = () => {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const formData = new FormData();
     formData.append("image", file);
-
     try {
       const res = await fetch(`${apiBaseUrl}/api/profile/image/`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
         body: formData,
       });
-
       if (res.ok) {
         const data = await res.json();
         setProfileImageUrl(data.url);
         setProfileImage(URL.createObjectURL(file));
-      } else {
-        console.error("Image upload failed");
       }
     } catch (err) {
       console.error("Image upload error:", err);
     }
+  };
+
+  const levelLabel = (level) => {
+    const map = { ENTRY: 'Entry Level', INTERMEDIATE: 'Mid Level', SENIOR: 'Senior' };
+    return map[level] || level;
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
@@ -138,10 +153,10 @@ const Profile = () => {
                 <p className="text-gray-400">{email}</p>
                 <div className="flex gap-2 mt-2">
                   <span className="px-3 py-1 text-sm bg-darkblue/60 text-white rounded-full">
-                    Intermediate
+                    {stats?.total_interviews > 5 ? 'Experienced' : 'Learning'}
                   </span>
                   <span className="px-3 py-1 text-sm bg-darkblue/60 text-white rounded-full">
-                    Consistent
+                    {stats?.total_interviews > 0 ? 'Active' : 'Getting Started'}
                   </span>
                 </div>
               </div>
@@ -150,11 +165,7 @@ const Profile = () => {
               className="px-4 py-2 bg-darkblue/60 hover:bg-blue1 rounded-lg transition-colors flex items-center"
               onClick={editMode ? saveChanges : () => setEditMode(true)}
             >
-              {editMode ? (
-                <Save className="w-4 h-4 mr-2" />
-              ) : (
-                <Edit2 className="w-4 h-4 mr-2" />
-              )}
+              {editMode ? <Save className="w-4 h-4 mr-2" /> : <Edit2 className="w-4 h-4 mr-2" />}
               {editMode ? "Save" : "Edit Profile"}
             </button>
           </div>
@@ -169,7 +180,11 @@ const Profile = () => {
               <Award className="w-8 h-8 text-blue1" />
               <div>
                 <p className="text-gray-400">Average Score</p>
-                <p className="text-2xl font-bold">78.6 %</p>
+                <p className="text-2xl font-bold">
+                  {stats?.average_score !== null && stats?.average_score !== undefined
+                    ? `${stats.average_score} / 10`
+                    : '—'}
+                </p>
               </div>
             </div>
           </div>
@@ -181,7 +196,7 @@ const Profile = () => {
               <Clock className="w-8 h-8 text-blue1" />
               <div>
                 <p className="text-gray-400">Total Time</p>
-                <p className="text-2xl font-bold">13h 30m</p>
+                <p className="text-2xl font-bold">{stats?.total_time || '0h 0m'}</p>
               </div>
             </div>
           </div>
@@ -193,22 +208,39 @@ const Profile = () => {
               <BarChart2 className="w-8 h-8 text-blue1" />
               <div>
                 <p className="text-gray-400">Completed</p>
-                <p className="text-2xl font-bold">7</p>
+                <p className="text-2xl font-bold">{stats?.total_interviews ?? '—'}</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Recent Interviews Placeholder */}
+      {/* Recent Interviews */}
       <div className="bg-darkblue/40 text-white rounded-lg shadow-lg">
         <div className="p-6">
           <h2 className="text-xl font-bold mb-4">Recent Interviews</h2>
-          <div className="space-y-4">
-            <div className="text-gray-400 text-sm">
-              No recent interviews available.
+          {recentInterviews.length > 0 ? (
+            <div className="space-y-3">
+              {recentInterviews.map((iv) => (
+                <div key={iv.id} className="flex justify-between items-center p-3 bg-darkblue/40 rounded-lg">
+                  <div className="flex gap-6 text-sm text-gray-400">
+                    <span className="text-white font-medium">{iv.title || 'General Interview'}</span>
+                    <span>{levelLabel(iv.level)}</span>
+                    <span>{iv.mode}</span>
+                    <span>{formatDate(iv.created_at)}</span>
+                  </div>
+                  <a
+                    href={`/review/${iv.id}`}
+                    className="text-blue1 text-sm hover:text-white transition"
+                  >
+                    Review
+                  </a>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <p className="text-gray-400 text-sm">No interviews yet. Complete your first interview to see it here!</p>
+          )}
         </div>
       </div>
     </div>

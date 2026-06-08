@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import CardSign from "./CardSign";
+import { ACCESS_TOKEN, REFRESH_TOKEN } from "../../constants";
 
 const signup = [
   {
@@ -23,6 +24,16 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  const handleGuestLogin = (e) => {
+    e.preventDefault();
+    localStorage.setItem(ACCESS_TOKEN, "guest_token_bypass");
+    localStorage.setItem(REFRESH_TOKEN, "guest_token_bypass");
+    localStorage.setItem("token", "guest_token_bypass");
+    localStorage.setItem("username", "guest_user");
+    localStorage.setItem("userEmail", "guest@gmail.com");
+    navigate("/dashboard");
+  };
 
   // Vite env var access with fallback (note: include /api in the fetch URL if needed)
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -115,12 +126,13 @@ export default function Register() {
             >
               {loading ? "Loading..." : "Continue"}
             </button>
-            <Link
-              to="/dashboard"
-              className="text-zinc-400 hover:text-zinc-300 underline ml-24"
+            <button
+              type="button"
+              onClick={handleGuestLogin}
+              className="text-zinc-400 hover:text-zinc-300 underline ml-24 bg-transparent border-0 cursor-pointer"
             >
               Guest Login
-            </Link>
+            </button>
           </div>
         </form>
       </div>

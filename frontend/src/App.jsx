@@ -32,6 +32,7 @@ import Domain from "./components/Interview_Setting/Domain";
 import ComingSoon from "./components/Coming_soon";
 import ConfirmEmail from "./components/Email/Confirm_Mail";
 import EmailConfirmed from "./components/Email/Email_Confirmed";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function Logout() {
   localStorage.clear();
@@ -48,35 +49,40 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
+          {/* Public routes */}
           <Route index element={<Animation />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="interview-category" element={<Category />} />
-          <Route path="cam-permission" element={<Permission />} />
           <Route path="register" element={<RegisterAndLogout />} />
-          <Route path="cam-preview1" element={<Camera_Preview1 />} />
-          <Route path="cam-preview2" element={<Camera_Preview2 />} />
-          <Route path="resume" element={<Resume />} />
-          <Route path="review-interview" element={<Review_Interview />} />
-          <Route path="analysis" element={<Analysis />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
           <Route path="logout" element={<Logout />} />
-          <Route path="courses" element={<Courses />} />
-          <Route path="practice" element={<Practice />} />
-          <Route path="email-verification" element={<Email_Verification />} />
-          <Route path="interview-setting" element={<Interview_Setting />} />
-          <Route path="interview-simulator" element={<Interview_Simulator />} />
           <Route path="home" element={<Home />} />
           <Route path="acknowledgement" element={<Acknowledgement />} />
           <Route path="support" element={<Support />} />
-          <Route path="*" element={<NotFound />} />
-          <Route path="review/:interviewId" element={<Review_Interface />} />
-          <Route path="check" element={<TranscriptAnalysis />} />
-          <Route path="profile" element={<Profile />} />
-          <Route path="domain" element={<Domain />} />
-          <Route path="coming-soon" element={<ComingSoon />} />
+          <Route path="email-verification" element={<Email_Verification />} />
           <Route path="confirm-email" element={<ConfirmEmail />} />
           <Route path="confirmed" element={<EmailConfirmed />} />
+          <Route path="*" element={<NotFound />} />
+
+          {/* Protected routes */}
+          <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="resume" element={<ProtectedRoute><Resume /></ProtectedRoute>} />
+          <Route path="interview-simulator" element={<ProtectedRoute><Interview_Simulator /></ProtectedRoute>} />
+          <Route path="profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="review/:interviewId" element={<ProtectedRoute><Review_Interface /></ProtectedRoute>} />
+          <Route path="review-interview" element={<ProtectedRoute><Review_Interview /></ProtectedRoute>} />
+          <Route path="interview-setting" element={<ProtectedRoute><Interview_Setting /></ProtectedRoute>} />
+          <Route path="interview-category" element={<ProtectedRoute><Category /></ProtectedRoute>} />
+          <Route path="analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
+          <Route path="domain" element={<ProtectedRoute><Domain /></ProtectedRoute>} />
+
+          {/* Semi-protected (no strict auth needed but logged-in context) */}
+          <Route path="cam-permission" element={<Permission />} />
+          <Route path="cam-preview1" element={<Camera_Preview1 />} />
+          <Route path="cam-preview2" element={<Camera_Preview2 />} />
+          <Route path="courses" element={<Courses />} />
+          <Route path="practice" element={<Practice />} />
+          <Route path="check" element={<TranscriptAnalysis />} />
+          <Route path="coming-soon" element={<ComingSoon />} />
         </Route>
       </Routes>
     </BrowserRouter>
