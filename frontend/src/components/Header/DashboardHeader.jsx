@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { API_BASE_URL } from "../../constants";
 
 export default function DashboardHeader() {
   const token = localStorage.getItem("token");
@@ -8,8 +9,7 @@ export default function DashboardHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
-  // Vite env var access with fallback
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const apiBaseUrl = API_BASE_URL;
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -145,7 +145,7 @@ export default function DashboardHeader() {
                       } hover:bg-blue1`
                     }
                   >
-                    Review
+                    Interviews
                   </NavLink>
                 </li>
                 <li>

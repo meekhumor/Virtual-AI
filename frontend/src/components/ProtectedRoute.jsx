@@ -9,7 +9,7 @@ function ProtectedRoute({ children }) {
 
     const refreshToken = async () => {
         const refreshToken = localStorage.getItem(REFRESH_TOKEN);
-        if (refreshToken === "guest_token_bypass") {
+        if (refreshToken && refreshToken.startsWith("guest_token_")) {
             setIsAuthorized(true);
             return;
         }
@@ -33,7 +33,7 @@ function ProtectedRoute({ children }) {
             setIsAuthorized(false);
             return;
         }
-        if (token === "guest_token_bypass") {
+        if (token && token.startsWith("guest_token_")) {
             setIsAuthorized(true);
             return;
         }

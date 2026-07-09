@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { API_BASE_URL } from "../../constants";
 import { Camera, Edit2, Save, Award, Clock, BarChart2 } from "lucide-react";
 
 const Profile = () => {
   const token = localStorage.getItem("token");
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+  const apiBaseUrl = API_BASE_URL;
 
   const [username, setUsername] = useState("Guest");
   const [email, setEmail] = useState("guest@gmail.com");
@@ -106,7 +107,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 mt-16">
+    <div className="max-w-4xl mx-auto space-y-6 mt-16 px-6 md:px-12 w-full">
       {/* Profile Header */}
       <div className="bg-darkblue bg-opacity-40 text-white rounded-lg shadow-lg">
         <div className="p-6">

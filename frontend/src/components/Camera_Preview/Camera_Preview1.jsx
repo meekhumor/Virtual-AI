@@ -42,7 +42,7 @@ export default function Camera_Preview1() {
   }, [videoAccess, audioAccess, networkAccess, navigate]);
 
   return (
-    <div className="mx-auto w-full max-w-xl flex flex-col gap-3 items-center bg-darkblue bg-opacity-40 py-14 my-16 rounded-3xl">
+    <div className="mx-auto max-w-xl flex flex-col gap-3 items-center bg-darkblue bg-opacity-40 py-14 px-6 md:px-12 my-16 rounded-3xl w-[calc(100%-2rem)] md:w-full">
       <h1 className='text-white text-3xl'>Let&apos;s get you set up.</h1>
       <p className='text-gray-400 text-sm'>We&apos;re testing your connection...</p>
 

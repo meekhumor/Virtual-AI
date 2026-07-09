@@ -95,7 +95,7 @@ const DomainCard = ({ domain }) => {
 const Domain = () => {
   return (
     <div className="w-full max-w-3xl mx-auto p-8">
-      <div className="text-center my-12">
+      <div className="text-center mb-12">
         <h2 className="text-2xl text-white mb-3">Choose Your Domain</h2>
         <p className="text-gray-400">Select a domain to begin your interview preparation</p>
       </div>

@@ -3,7 +3,7 @@ import {Link} from "react-router-dom"
 export default function Email_Verification() {
 
     return (
-      <div className="flex flex-col w-1/3 max-w-6xl min-h-screen mt-24 items-center mx-auto">
+      <div className="flex-grow flex flex-col justify-center items-center max-w-xl mx-auto w-[calc(100%-2rem)] px-6 py-12 text-center mt-24">
 
         <div className="flex flex-col gap-6 items-center">
             <img src="/email-verification.svg" className="w-36 h-36" alt="" />

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import CardSign from "./CardSign";
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "../../constants";
+import { ACCESS_TOKEN, REFRESH_TOKEN, API_BASE_URL } from "../../constants";
 
 const signup = [
   {
@@ -23,20 +23,36 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const navigate = useNavigate();
 
-  const handleGuestLogin = (e) => {
+  const triggerGuestLoginPrompt = (e) => {
     e.preventDefault();
-    localStorage.setItem(ACCESS_TOKEN, "guest_token_bypass");
-    localStorage.setItem(REFRESH_TOKEN, "guest_token_bypass");
-    localStorage.setItem("token", "guest_token_bypass");
-    localStorage.setItem("username", "guest_user");
-    localStorage.setItem("userEmail", "guest@gmail.com");
-    navigate("/dashboard");
+    setShowGuestModal(true);
   };
 
-  // Vite env var access with fallback (note: include /api in the fetch URL if needed)
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const handleGuestLogin = async () => {
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/guest-login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        throw new Error("Failed to initialize guest session");
+      }
+      const data = await res.json();
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("username", data.user.username);
+      localStorage.setItem("userEmail", data.user.email);
+      localStorage.setItem(ACCESS_TOKEN, data.token);
+      localStorage.setItem(REFRESH_TOKEN, data.token);
+      navigate("/dashboard");
+    } catch (err) {
+      alert("Error starting guest session: " + err.message);
+    }
+  };
+
+  const apiBaseUrl = API_BASE_URL;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -128,7 +144,7 @@ export default function Register() {
             </button>
             <button
               type="button"
-              onClick={handleGuestLogin}
+              onClick={triggerGuestLoginPrompt}
               className="text-zinc-400 hover:text-zinc-300 underline ml-24 bg-transparent border-0 cursor-pointer"
             >
               Guest Login
@@ -136,6 +152,33 @@ export default function Register() {
           </div>
         </form>
       </div>
+
+      {showGuestModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+          <div className="bg-darkblue3 border border-zinc-800 p-8 rounded-2xl shadow-2xl max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold text-white mb-4">Guest Session</h2>
+            <p className="text-zinc-300 mb-6 leading-relaxed text-sm">
+              You are entering as a guest. All data generated during this session (mock interviews, uploaded resumes, and history) will be permanently deleted after 12 hours. You can check the code<a href="https://github.com/meekhumor/Virtual-AI/blob/main/backend/api/views.py#L214" target="_blank" rel="noopener noreferrer" className="text-blue1 hover:underline"> here</a>.
+            </p>
+            <div className="flex gap-4 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowGuestModal(false)}
+                className="px-4 py-2 rounded-full border border-zinc-700 text-zinc-300 hover:bg-zinc-800 transition-colors text-sm animate-button"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleGuestLogin}
+                className="px-4 py-2 rounded-full bg-blue1 hover:bg-darkblue text-white font-medium transition-colors text-sm animate-button"
+              >
+                Proceed to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

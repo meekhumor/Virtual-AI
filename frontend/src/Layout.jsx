@@ -10,7 +10,7 @@ function Layout() {
   const renderHeader = () => {
     if (location.pathname === '/home' || location.pathname === '/about' || location.pathname === '/contact' || location.pathname === '/support' || location.pathname === '/acknowledgement') {
       return <HomeHeader />;
-    } else if (location.pathname === '/register' || location.pathname === '/email-verification') {
+    } else if (location.pathname === '/register' || location.pathname === '/email-verification' || location.pathname === '/confirm-email' || location.pathname === '/confirmed') {
       return <RegisterHeader />;
     } else if (location.pathname === '/interview-simulator' || location.pathname === '/'){
       return null
@@ -28,11 +28,13 @@ function Layout() {
   };
 
   return (
-    <>
+    <div className="flex flex-col min-h-screen bg-black">
       {renderHeader()}
-      <Outlet />
+      <main className="flex-grow flex flex-col">
+        <Outlet />
+      </main>
       {renderFooter()}
-    </>
+    </div>
   );
 }
 

@@ -29,7 +29,7 @@ export default function Camera_Preview2() {
   }, []);
 
   return (
-    <div className="mx-auto w-full max-w-xl flex flex-col gap-10 items-center bg-darkblue bg-opacity-40 rounded-3xl py-14 my-16">
+    <div className="mx-auto max-w-xl flex flex-col gap-10 items-center bg-darkblue bg-opacity-40 rounded-3xl py-14 px-6 md:px-12 my-16 w-[calc(100%-2rem)] md:w-full">
       <h1 className="text-white text-2xl">Get Ready...</h1>
       <video
         ref={videoRef}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { API_BASE_URL, ACCESS_TOKEN, REFRESH_TOKEN } from "../../constants";
 
 const LoginModal = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState("");
@@ -8,9 +9,8 @@ const LoginModal = ({ isOpen, onClose }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
   
-  console.log('VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-  // Vite env var access with fallback
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  console.log('API_BASE_URL:', API_BASE_URL);
+  const apiBaseUrl = API_BASE_URL;
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -28,6 +28,8 @@ const LoginModal = ({ isOpen, onClose }) => {
 
       if (res.ok) {
         localStorage.setItem("token", data.token);
+        localStorage.setItem(ACCESS_TOKEN, data.token);
+        localStorage.setItem(REFRESH_TOKEN, data.token);
         localStorage.setItem("userEmail", data.user.email);
         localStorage.setItem("username", data.user.username); 
         navigate("/dashboard"); // adjust route if needed

@@ -37,18 +37,19 @@ class SupabaseJWTAuthentication(BaseAuthentication):
         
         token = auth_header.split(' ')[1]
 
-        if token == 'guest_token_bypass':
+        if token == 'guest_token_bypass' or (token and token.startswith('guest_token_')):
+            guest_id = token.replace('guest_token_', '') if token.startswith('guest_token_') else 'guest_supabase_id_12345'
             try:
-                django_user = User.objects.get(supabase_id='guest_supabase_id_12345')
+                django_user = User.objects.get(supabase_id=guest_id)
             except User.DoesNotExist:
-                try:
-                    django_user = User.objects.get(email='guest@example.com')
-                except User.DoesNotExist:
+                if token == 'guest_token_bypass':
                     django_user = User.objects.create_user(
                         email='guest@example.com',
                         username='guest_user',
                         supabase_id='guest_supabase_id_12345'
                     )
+                else:
+                    raise AuthenticationFailed('Guest session not found or expired.')
             return (django_user, token)
 
         try:
@@ -83,22 +84,28 @@ class TokenAuthMiddleware(BaseMiddleware):
             scope['user'] = AnonymousUser()
             return await super().__call__(scope, receive, send)
 
-        if token == 'guest_token_bypass':
-            django_user = await get_user_from_supabase_id('guest_supabase_id_12345')
+        if token == 'guest_token_bypass' or (token and token.startswith('guest_token_')):
+            guest_id = token.replace('guest_token_', '') if token.startswith('guest_token_') else 'guest_supabase_id_12345'
+            django_user = await get_user_from_supabase_id(guest_id)
             if isinstance(django_user, AnonymousUser):
-                @database_sync_to_async
-                def create_guest():
-                    try:
-                        u = User.objects.get(email='guest@example.com')
-                    except User.DoesNotExist:
-                        u = User.objects.create_user(
-                            email='guest@example.com',
-                            username='guest_user',
-                            supabase_id='guest_supabase_id_12345'
-                        )
-                    return u
-                django_user = await create_guest()
-            scope['user'] = django_user
+                if token == 'guest_token_bypass':
+                    @database_sync_to_async
+                    def create_guest():
+                        try:
+                            u = User.objects.get(email='guest@example.com')
+                        except User.DoesNotExist:
+                            u = User.objects.create_user(
+                                email='guest@example.com',
+                                username='guest_user',
+                                supabase_id='guest_supabase_id_12345'
+                            )
+                        return u
+                    django_user = await create_guest()
+                    scope['user'] = django_user
+                else:
+                    scope['user'] = AnonymousUser()
+            else:
+                scope['user'] = django_user
             return await super().__call__(scope, receive, send)
 
         try:

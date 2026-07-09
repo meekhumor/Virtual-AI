@@ -69,12 +69,19 @@ class Interview(models.Model):
         ('PRACTICE', 'Practice Mode'),
     ]
 
+    STATUS_CHOICES = [
+        ('PENDING', 'Pending'),
+        ('IN_PROGRESS', 'In Progress'),
+        ('COMPLETED', 'Completed'),
+    ]
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='interviews')
     title = models.CharField(max_length=200, default="General Interview")
     scheduled_at = models.DateTimeField(null=True, blank=True)
     level = models.CharField(max_length=20, choices=LEVEL_CHOICES)
     mode = models.CharField(max_length=20, choices=MODE_CHOICES)
     duration_seconds = models.IntegerField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 

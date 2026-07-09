@@ -30,12 +30,12 @@
 
 ---
 
-## 📝 Description 
+## Description 
 
 Virtual Interviewer is an AI-powered platform designed to simulate job interviews, assess candidate responses, and provide real-time feedback. The system offers adaptive difficulty levels, job-specific question sets, and a performance review mechanism to help users improve their interview skills.  
 
 ---
-## 🔗 Links
+## Links
 
 - [GitHub Repository](https://github.com/meekhumor/virtual_interviewer/)
 - [Demo Video](https://drive.google.com/drive/u/0/folders/1px37x2HPjJ5sZkBsWWsPC9VrWcuJcfWN)
@@ -45,7 +45,7 @@ Virtual Interviewer is an AI-powered platform designed to simulate job interview
 
 ---
 
-## 🛠 Tech Stack  
+## Tech Stack  
 
 | **Category**                | **Technologies**                                                                                       |
 |-----------------------------|----------------------------------------------------------------------------------------------------|
@@ -56,12 +56,12 @@ Virtual Interviewer is an AI-powered platform designed to simulate job interview
 
 ---
 
-## 🗄️ Database Schema Diagram
+## Database Schema Diagram
 
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/a48a3bf4-3433-433b-8bb2-928e05c6c644" />
 
 
-## 📈 Progress
+## Progress
 
 - Frontend Completed
 - Backend Completed
@@ -74,28 +74,28 @@ Virtual Interviewer is an AI-powered platform designed to simulate job interview
 
 ---
 
-## 🔮 Future Scope  
+## Future Scope  
 
 1. **Voice & Sentiment Analysis** – AI-driven evaluation of tone, confidence, and emotions.  
-2. **Live Video-Based Feedback** – Real-time AI feedback on facial expressions and engagement.
+2. **Live Video Based Feedback** – Real-time AI feedback on facial expressions and engagement.
 3. **Mock Interviews with AI Avatars** – Interact with lifelike AI interviewers for a realistic experience.  
 4. **Seamless Integration with Job Portals** – Connect directly to job listings and applications.   
 
 ---
 
-## 💸 Applications
+## Applications
 
-- **AI-Powered Job Position-Based Interviews**  
+- **AI Powered Job Position Based Interviews**  
 - **General & Custom Interview Simulations**   
 - **Response Analysis & Scoring** 
 - **Resume Upload & Parsing**   
-- **AI-Powered Interview Feedback**  
+- **AI Powered Interview Feedback**  
 - **Performance Review & Progress Tracking**  
 - **NLP-Based Answer Evaluation**   
  
 ---
 
-## 🛠 Project Setup 
+## Project Setup 
 
 ### Backend Setup  
 ```bash
@@ -113,7 +113,7 @@ npm run dev
 ```  
 ---
 
-## 👨‍💻 Team Members
+## Team Members
 | Name  | Email | GitHub |
 |--------|------------|----------|
 | Om Mukherjee| om17092004@gmail.com | [GitHub](https://github.com/meekhumor) |
@@ -121,7 +121,7 @@ npm run dev
 | Aman Vatsa | amanvatsa13@gmail.com | [GitHub](https://github.com/amanv13) |
 
 
-## 👨‍🏫 Mentors
+## Mentors
 | Name  | Email | GitHub |
 |--------|------------|----------|
 | Harshala Mahajan | mharshala334@gmail.com | [GitHub](https://github.com/harshala334) |
@@ -158,10 +158,10 @@ npm run dev
 ### Courses  
 <img src="https://github.com/user-attachments/assets/3e8b5c5a-fd04-48e9-a862-6e3b87fa0f2f" width="700" style="height: auto;"/>
 
-### Skill-based Interview  
+### Skill based Interview  
 <img src="https://github.com/user-attachments/assets/62cdbf3d-3d98-47f8-b3e4-094b2c69f9aa" width="700" style="height: auto;"/>
 
-### Job-based Interview  
+### Job based Interview  
 <img src="https://github.com/user-attachments/assets/a8c5ffff-4cde-4efa-aa14-e41fdfc1cb98" width="700" style="height: auto;"/>
 
 </div>

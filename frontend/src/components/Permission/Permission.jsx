@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 
 export default function Permission() {
   return (
-    <div className="mx-auto w-full max-w-xl flex flex-col items-center text-center gap-6 bg-darkblue bg-opacity-40 py-14 my-24 rounded-3xl">
+    <div className="mx-auto max-w-xl flex flex-col items-center text-center gap-6 bg-darkblue bg-opacity-40 py-14 px-6 md:px-12 my-16 rounded-3xl w-[calc(100%-2rem)] md:w-full">
       <img src="/camCheck.png" className="w-28" alt="Camera check icon" />
       <h1 className="text-white text-3xl w-4/5 mt-4">
         We use your computer&apos;s camera to help you prepare.

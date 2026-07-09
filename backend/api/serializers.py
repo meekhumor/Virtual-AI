@@ -31,7 +31,7 @@ class InterviewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Interview
-        fields = ['id', 'title', 'scheduled_at', 'level', 'mode', 'duration_seconds', 'created_at', 'questions']
+        fields = ['id', 'title', 'scheduled_at', 'level', 'mode', 'duration_seconds', 'status', 'created_at', 'questions']
 
 
 class InterviewDetailSerializer(serializers.ModelSerializer):
@@ -39,7 +39,7 @@ class InterviewDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Interview
-        fields = ['id', 'title', 'level', 'mode', 'scheduled_at', 'duration_seconds', 'created_at', 'questions']
+        fields = ['id', 'title', 'level', 'mode', 'scheduled_at', 'duration_seconds', 'status', 'created_at', 'questions']
 
     def get_questions(self, interview):
         serializer = QuestionSerializer(

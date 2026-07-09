@@ -6,8 +6,8 @@ export default function RegisterHeader() {
   const [isModalOpen, setIsModalOpen] = useState(false); 
 
   return (
-    <header className="shadow sticky z-50 top-0 max-w-7xl mx-auto px-12">
-      <nav className="bg-black border-gray-200 py-6 max-w-screen-xl">
+    <header className="shadow sticky z-50 top-0 w-full bg-black">
+      <nav className="bg-black border-gray-200 py-6 max-w-7xl mx-auto px-12">
         <div className="flex justify-between items-center">
           <Link to="/" className="flex items-center">
             <img className=" w-8 rounded-full bg-transparent bg-darkblue bg-opacity-40" src="https://d154zarmrcpu4a.cloudfront.net/60fe828b-2ebf-4dd2-9b4d-d78f771b83cc.png" />

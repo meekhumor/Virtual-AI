@@ -6,6 +6,7 @@ from .views import (
     ResumeUploadView,
     LoginView,
     SignupView,
+    GuestLoginView,
     StartInterviewView,
     UpdateProfileView,
     ProfileImageUploadView,
@@ -13,12 +14,15 @@ from .views import (
     ProfileStatsView,
     InterviewAnalysisView,
     InterviewAnalysisGetView,
+    InterviewStatusUpdateView,
+    VideoUploadView,
 )
 
 urlpatterns = [
     # Auth
     path('signup/', SignupView.as_view(), name='signup'),
     path('login/', LoginView.as_view(), name='login'),
+    path('guest-login/', GuestLoginView.as_view(), name='guest-login'),
 
     # Profile
     path('profile/', ProfileView.as_view(), name='profile-view'),
@@ -38,4 +42,8 @@ urlpatterns = [
     # Analysis
     path('interviews/<int:interview_id>/analyze/', InterviewAnalysisView.as_view(), name='interview-analyze'),
     path('interviews/<int:interview_id>/analysis/', InterviewAnalysisGetView.as_view(), name='interview-analysis'),
+
+    # Status update
+    path('interviews/<int:interview_id>/status/', InterviewStatusUpdateView.as_view(), name='interview-status'),
+    path('interviews/video/upload/', VideoUploadView.as_view(), name='video-upload'),
 ]

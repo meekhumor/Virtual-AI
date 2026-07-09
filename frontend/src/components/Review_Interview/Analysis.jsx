@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_BASE_URL } from "../../constants";
 import { useSearchParams } from 'react-router-dom';
 
 const Analysis = () => {
@@ -11,7 +12,7 @@ const Analysis = () => {
   const [selectedMetric, setSelectedMetric] = useState(null);
   const [showModal, setShowModal] = useState(false);
 
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const apiBaseUrl = API_BASE_URL;
   const token = localStorage.getItem('token');
 
   const improvementTips = {

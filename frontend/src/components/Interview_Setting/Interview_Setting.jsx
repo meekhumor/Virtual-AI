@@ -38,7 +38,7 @@ function Interview_Setting() {
   };
 
   return (
-    <div className='flex flex-col mx-auto max-w-2xl items-center rounded-3xl py-14 my-16 gap-12 bg-darkblue bg-opacity-40'>
+    <div className='flex flex-col mx-auto max-w-2xl items-center rounded-3xl py-14 px-6 md:px-12 my-16 gap-12 bg-darkblue bg-opacity-40 w-[calc(100%-2rem)] md:w-full'>
 
       {/* Heading */}
       <div className='flex flex-col gap-2 items-center'>

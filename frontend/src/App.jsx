@@ -49,7 +49,6 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
-          {/* Public routes */}
           <Route index element={<Animation />} />
           <Route path="register" element={<RegisterAndLogout />} />
           <Route path="about" element={<About />} />
@@ -63,7 +62,6 @@ function App() {
           <Route path="confirmed" element={<EmailConfirmed />} />
           <Route path="*" element={<NotFound />} />
 
-          {/* Protected routes */}
           <Route path="dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="resume" element={<ProtectedRoute><Resume /></ProtectedRoute>} />
           <Route path="interview-simulator" element={<ProtectedRoute><Interview_Simulator /></ProtectedRoute>} />
@@ -75,7 +73,6 @@ function App() {
           <Route path="analysis" element={<ProtectedRoute><Analysis /></ProtectedRoute>} />
           <Route path="domain" element={<ProtectedRoute><Domain /></ProtectedRoute>} />
 
-          {/* Semi-protected (no strict auth needed but logged-in context) */}
           <Route path="cam-permission" element={<Permission />} />
           <Route path="cam-preview1" element={<Camera_Preview1 />} />
           <Route path="cam-preview2" element={<Camera_Preview2 />} />

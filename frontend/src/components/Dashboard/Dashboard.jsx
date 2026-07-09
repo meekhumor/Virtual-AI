@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { API_BASE_URL } from "../../constants";
 import { Play, Pause } from "lucide-react";
 import CardDash1 from "./CardDash1";
 import { Link, NavLink } from "react-router-dom";
@@ -33,7 +34,7 @@ export default function Dashboard() {
   const [recentInterview, setRecentInterview] = useState(null);
   const videoRef = useRef(null);
 
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const apiBaseUrl = API_BASE_URL;
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -46,7 +47,7 @@ export default function Dashboard() {
         if (res.ok) {
           const data = await res.json();
           if (data.length > 0) {
-            setRecentInterview(data[0]); // already ordered by -created_at from backend
+            setRecentInterview(data[0]); 
           }
         }
       } catch (e) {
@@ -87,7 +88,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="w-full max-w-4xl mb-36 mx-auto">
+    <div className="w-full max-w-4xl px-6 md:px-12 mb-36 mx-auto">
       <div className='flex justify-center items-center'>
         <div className='flex flex-col mt-12 mb-5' id="hero">
           <h1 className='text-white text-2xl text-center'>Simulate an Interview</h1>

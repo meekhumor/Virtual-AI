@@ -25,37 +25,42 @@ from .serializers import (
     InterviewDetailSerializer, InterviewAnalysisSerializer,
 )
 from .supabase_client import supabase
-import google.generativeai as genai
+from google import genai
+from google.genai import types
+from groq import Groq
 
 logger = logging.getLogger(__name__)
 
 FRONTEND_URL = settings.FRONTEND_URL
 
-# Configure Gemini
-genai.configure(api_key=settings.GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel("gemini-1.5-flash")
+_genai_client = genai.Client(api_key=settings.GEMINI_API_KEY)
+_groq_client = Groq(api_key=settings.GROQ_API_KEY)
 
-
-def _call_gemini(prompt: str, max_output_tokens: int = 500) -> str:
-    """Call Gemini and return text content. Raises on failure."""
-    response = gemini_model.generate_content(
-        prompt,
-        generation_config=genai.GenerationConfig(max_output_tokens=max_output_tokens),
-    )
-    return response.text.strip()
+def _call_llm(prompt: str, max_output_tokens: int = 500) -> str:
+    """Call gemini and fall back to groq on any error."""
+    try:
+        response = _genai_client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config=types.GenerateContentConfig(max_output_tokens=max_output_tokens),
+        )
+        return response.text.strip()
+    except Exception as gemini_err:
+        logger.warning("Gemini failed in views, switching to Groq: %s", gemini_err)
+        chat = _groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=max_output_tokens,
+        )
+        return chat.choices[0].message.content.strip()
 
 
 def _get_resume_text(user) -> str:
-    """Look up parsed_text from the user's most recent Resume. Never re-downloads PDF."""
+    """Look up parsed text from the user's most recent resume."""
     resume = Resume.objects.filter(user=user).order_by('-created_at').first()
     if resume and resume.parsed_text:
         return resume.parsed_text[:3000]
     return ""
-
-
-# ---------------------------------------------------------------------------
-# Profile views
-# ---------------------------------------------------------------------------
 
 class ProfileView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
@@ -99,7 +104,6 @@ class ProfileStatsView(APIView):
             "recent_interviews": recent_data,
         })
 
-
 class ProfileImageUploadView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -122,7 +126,6 @@ class ProfileImageUploadView(APIView):
             logger.exception("Profile image upload failed")
             return DRFResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
 class UpdateProfileView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
     permission_classes = [IsAuthenticated]
@@ -143,10 +146,6 @@ class UpdateProfileView(APIView):
             return DRFResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# ---------------------------------------------------------------------------
-# Auth views
-# ---------------------------------------------------------------------------
-
 class SignupView(APIView):
     def post(self, request):
         email = request.data.get('email')
@@ -155,17 +154,15 @@ class SignupView(APIView):
 
         supabase_user = None
         try:
-            # Step 1: Create Supabase auth user
             auth_response = supabase.auth.sign_up({
                 "email": email,
                 "password": password,
                 "options": {
-                    "email_redirect_to": f"{settings.FRONTEND_URL}/confirm-email"
+                    "email_redirect_to": f"{settings.FRONTEND_URL}/confirmed"
                 }
             })
             supabase_user = auth_response.user
 
-            # Step 2: Create Django user atomically; rollback Supabase if this fails
             with transaction.atomic():
                 user = User.objects.create_user(
                     email=email,
@@ -180,7 +177,6 @@ class SignupView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            # If Django write failed and Supabase user was created, clean up
             if supabase_user:
                 try:
                     supabase.auth.admin.delete_user(str(supabase_user.id))
@@ -197,7 +193,6 @@ class LoginView(APIView):
         try:
             response = supabase.auth.sign_in_with_password({"email": email, "password": password})
 
-            # On-demand Django user creation if trigger hasn't fired yet
             try:
                 user = User.objects.get(email=email)
             except User.DoesNotExist:
@@ -216,13 +211,65 @@ class LoginView(APIView):
             return DRFResponse({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-# ---------------------------------------------------------------------------
-# Resume
-# ---------------------------------------------------------------------------
+class GuestLoginView(APIView):
+    def post(self, request):
+        import uuid
+        from datetime import timedelta
+        try:
+            threshold = timezone.now() - timedelta(hours=12)
+            expired_guests = User.objects.filter(email__startswith='guest_', created_at__lt=threshold)
+            count, _ = expired_guests.delete()
+            if count > 0:
+                logger.info(f"Cleaned up {count} expired guest user(s).")
+
+            guest_id = str(uuid.uuid4())
+            guest_email = f"guest_{guest_id}@virtualai.local"
+            guest_username = f"Guest_{guest_id[:4]}"
+            
+            user = User.objects.create_user(
+                email=guest_email,
+                username=guest_username,
+                supabase_id=guest_id,
+                password=None
+            )
+
+            guest_token = f"guest_token_{guest_id}"
+
+            return DRFResponse({
+                "token": guest_token,
+                "user": {"email": user.email, "username": user.username},
+            }, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            logger.exception("Guest login creation failed")
+            return DRFResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 class ResumeUploadView(APIView):
     authentication_classes = [SupabaseJWTAuthentication]
     permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        try:
+            resume = Resume.objects.filter(user=user).order_by('-created_at').first()
+            if not resume:
+                return DRFResponse({"has_resume": False}, status=200)
+
+            # Extract filename from the file_url or just use the last segment.
+            filename = resume.file_url.split('/')[-1]
+            from urllib.parse import unquote
+            filename = unquote(filename)
+
+            return DRFResponse({
+                "has_resume": True,
+                "url": resume.file_url,
+                "filename": filename,
+                "created_at": resume.created_at
+            }, status=200)
+        except Exception as e:
+            logger.exception("Failed to fetch resume")
+            return DRFResponse({"error": str(e)}, status=500)
 
     def post(self, request):
         file = request.FILES.get('resume')
@@ -239,7 +286,6 @@ class ResumeUploadView(APIView):
             supabase.storage.from_("resumes").upload(file_path, file_bytes, options)
             file_url = supabase.storage.from_("resumes").get_public_url(file_path)
 
-            # Parse PDF text immediately — store once, never re-download
             parsed_text = ""
             try:
                 with pdfplumber.open(BytesIO(file_bytes)) as pdf:
@@ -258,11 +304,6 @@ class ResumeUploadView(APIView):
         except Exception as e:
             logger.exception("Resume upload failed")
             return DRFResponse({"error": str(e)}, status=500)
-
-
-# ---------------------------------------------------------------------------
-# Interview views
-# ---------------------------------------------------------------------------
 
 class InterviewDetailView(RetrieveDestroyAPIView):
     queryset = Interview.objects.all()
@@ -309,7 +350,6 @@ class SubmitResponseView(APIView):
 
         resume_text = _get_resume_text(user)
 
-        # Build conversation history context (last 3 turns)
         recent_responses = (
             InterviewResponse.objects
             .filter(interview=interview)
@@ -343,8 +383,7 @@ Respond ONLY with valid JSON in exactly this format:
         score = None
 
         try:
-            raw_content = _call_gemini(prompt, max_output_tokens=600)
-            # Strip markdown code fences if present
+            raw_content = _call_llm(prompt, max_output_tokens=600)
             raw_content = re.sub(r"^```(?:json)?\n?", "", raw_content)
             raw_content = re.sub(r"```$", "", raw_content).strip()
             ai_data = json.loads(raw_content)
@@ -352,9 +391,9 @@ Respond ONLY with valid JSON in exactly this format:
             next_question_text = ai_data.get("next_question", next_question_text)
             score = ai_data.get("score")
         except json.JSONDecodeError as e:
-            logger.warning("Gemini JSON decode error in SubmitResponseView: %s", e)
+            logger.warning("LLM JSON decode error in SubmitResponseView: %s", e)
         except Exception as e:
-            logger.exception("Gemini call failed in SubmitResponseView: %s", e)
+            logger.exception("LLM call failed in SubmitResponseView: %s", e)
 
         try:
             response_obj = InterviewResponse.objects.create(
@@ -401,6 +440,7 @@ class StartInterviewView(APIView):
             mode=mode,
             duration_seconds=duration,
             scheduled_at=timezone.now(),
+            status='IN_PROGRESS',
         )
 
         resume_text = _get_resume_text(user)
@@ -412,24 +452,38 @@ Return ONLY the question text, nothing else."""
 
         question_text = "Tell me about yourself."
         try:
-            question_text = _call_gemini(prompt, max_output_tokens=200)
-            # Strip surrounding quotes if Gemini wraps the question
+            question_text = _call_llm(prompt, max_output_tokens=200)
             question_text = question_text.strip('"').strip("'").strip()
         except Exception as e:
-            logger.exception("Gemini failed in StartInterviewView: %s", e)
+            logger.exception("LLM failed in StartInterviewView: %s", e)
 
         Question.objects.create(interview=interview, text=question_text, order=1)
 
-        scheme = "wss" if request.is_secure() else "ws"
+        scheme = "wss" if (request.is_secure() or request.headers.get('x-forwarded-proto') == 'https' or 'onrender.com' in request.get_host()) else "ws"
         ws_url = f"{scheme}://{request.get_host()}/ws/interview/{interview.id}/"
 
         serializer = InterviewSerializer(interview)
         return DRFResponse({**serializer.data, 'ws_url': ws_url}, status=201)
 
 
-# ---------------------------------------------------------------------------
-# Analysis views
-# ---------------------------------------------------------------------------
+class InterviewStatusUpdateView(APIView):
+    """PATCH /api/interviews/<id>/status/ — update interview status."""
+    authentication_classes = [SupabaseJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, interview_id):
+        try:
+            interview = Interview.objects.get(id=interview_id, user=request.user)
+        except Interview.DoesNotExist:
+            return DRFResponse({'detail': 'Interview not found.'}, status=404)
+
+        new_status = request.data.get('status')
+        if new_status not in ['IN_PROGRESS', 'COMPLETED', 'PENDING']:
+            return DRFResponse({'detail': f'Invalid status: {new_status}'}, status=400)
+
+        interview.status = new_status
+        interview.save(update_fields=['status', 'updated_at'])
+        return DRFResponse({'id': interview.id, 'status': interview.status})
 
 class InterviewAnalysisView(APIView):
     """POST /api/interviews/{id}/analyze/ — generate and cache analysis."""
@@ -442,7 +496,6 @@ class InterviewAnalysisView(APIView):
         except Interview.DoesNotExist:
             return DRFResponse({'detail': 'Interview not found.'}, status=404)
 
-        # Return cached analysis if it exists
         if hasattr(interview, 'analysis') and interview.analysis:
             return DRFResponse(InterviewAnalysisSerializer(interview.analysis).data)
 
@@ -481,15 +534,15 @@ Return ONLY valid JSON with exactly these fields:
 }}"""
 
         try:
-            raw = _call_gemini(prompt, max_output_tokens=800)
+            raw = _call_llm(prompt, max_output_tokens=800)
             raw = re.sub(r"^```(?:json)?\n?", "", raw)
             raw = re.sub(r"```$", "", raw).strip()
             data = json.loads(raw)
         except json.JSONDecodeError as e:
-            logger.warning("Gemini JSON decode error in analysis: %s", e)
+            logger.warning("LLM JSON decode error in analysis: %s", e)
             return DRFResponse({'detail': 'AI returned invalid JSON. Try again.'}, status=500)
         except Exception as e:
-            logger.exception("Gemini call failed in analysis")
+            logger.exception("LLM call failed in analysis")
             return DRFResponse({'detail': f'AI analysis failed: {str(e)}'}, status=500)
 
         analysis = InterviewAnalysis.objects.create(
@@ -523,3 +576,36 @@ class InterviewAnalysisGetView(APIView):
         except InterviewAnalysis.DoesNotExist:
             return DRFResponse({'detail': 'Analysis not found. POST to /analyze/ first.'}, status=404)
         return DRFResponse(InterviewAnalysisSerializer(analysis).data)
+
+
+class VideoUploadView(APIView):
+    authentication_classes = [SupabaseJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        video_file = request.FILES.get("video")
+        if not video_file:
+            return DRFResponse({"error": "No video provided"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            import uuid
+            ext = video_file.name.split('.')[-1] if '.' in video_file.name else 'webm'
+            unique_filename = f"{uuid.uuid4()}.{ext}"
+            file_path = f"{user.supabase_id}/{unique_filename}"
+            
+            try:
+                supabase.storage.get_bucket("videos")
+            except Exception:
+                try:
+                    supabase.storage.create_bucket("videos", options={"public": True})
+                except Exception:
+                    pass
+
+            options = {"content-type": f"video/{ext}"}
+            supabase.storage.from_("videos").upload(file_path, video_file.read(), options)
+            public_url = supabase.storage.from_("videos").get_public_url(file_path)
+            
+            return DRFResponse({"message": "Video uploaded successfully", "url": public_url})
+        except Exception as e:
+            logger.exception("Video upload failed")
+            return DRFResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

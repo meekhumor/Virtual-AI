@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { API_BASE_URL } from "../../constants";
 import { Link, useParams } from 'react-router-dom';
 import { Brain } from 'lucide-react';
 
@@ -8,8 +9,7 @@ const Review_Interface = () => {
   const [interviewMeta, setInterviewMeta] = useState(null);
   const { interviewId } = useParams();
 
-  // Vite env var access with fallback
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const apiBaseUrl = API_BASE_URL;
 
   useEffect(() => {
     const fetchInterview = async () => {
@@ -94,9 +94,8 @@ const Review_Interface = () => {
 
         {/* Video */}
         {currentQuestion?.response?.video_url && (
-          <div className="relative rounded-lg overflow-hidden bg-gray-100 aspect-video mb-8">
-            <video controls className="w-full h-full">
-              <source src={currentQuestion.response.video_url} type="video/mp4" />
+          <div className="relative rounded-lg overflow-hidden bg-gray-100 aspect-video mb-8 border border-zinc-800">
+            <video src={currentQuestion.response.video_url} controls className="w-full h-full">
               Your browser does not support the video tag.
             </video>
           </div>
