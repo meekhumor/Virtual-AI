@@ -505,16 +505,20 @@ export default function Interview_Simulator() {
     }
   };
 
-  const patchStatus = useCallback(async (newStatus) => {
+  const patchStatus = useCallback(async (newStatus, elapsedSeconds = null) => {
     if (!interviewId) return;
     try {
+      const payload = { status: newStatus };
+      if (elapsedSeconds !== null) {
+        payload.duration_seconds = elapsedSeconds;
+      }
       await fetch(`${apiBaseUrl}/api/interviews/${interviewId}/status/`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(payload),
       });
     } catch (e) {
       console.error("Status patch failed:", e);
@@ -535,13 +539,17 @@ export default function Interview_Simulator() {
     }
     stopVideoTracks();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
-    await patchStatus(status);
+    
+    // Calculate elapsed time spent
+    const elapsed = duration && timeLeft !== null ? Math.max(0, duration - timeLeft) : 0;
+    await patchStatus(status, elapsed);
+    
     if (interviewId) {
       navigate(`/review/${interviewId}`);
     } else {
       navigate("/review-interview");
     }
-  }, [interviewId, navigate, patchStatus, closeWS]);
+  }, [interviewId, navigate, patchStatus, closeWS, duration, timeLeft]);
 
   const timePercent = timeLeft !== null ? ((duration - timeLeft) / duration) * 100 : 0;
   const timerColor = timeLeft !== null && timeLeft < 120 ? "#f87171" : "#e4e4e7";

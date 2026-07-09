@@ -103,14 +103,20 @@ const Review_Interface = () => {
 
         {/* AI Feedback */}
         {currentQuestion?.response?.ai_feedback && (
-          <div className="bg-darkblue bg-opacity-40 p-8 rounded-xl shadow-lg">
+          <div className="bg-darkblue bg-opacity-40 p-8 rounded-xl shadow-lg flex flex-col items-center">
             <div className="flex justify-center items-center space-x-2 mb-6">
               <Brain className="w-6 h-6 text-white mr-2" />
               <span className="text-white text-2xl">AI Powered Feedback</span>
             </div>
-            <p className="text-gray-400 mx-auto mb-6">
+            <p className="text-gray-400 mx-auto mb-6 text-center">
               {currentQuestion.response.ai_feedback}
             </p>
+            <Link 
+              to={`/analysis?interviewId=${interviewId}`}
+              className="px-8 py-2.5 text-sm font-semibold text-white rounded-xl bg-blue1 hover:bg-blue2 flex items-center justify-center"
+            >
+              Get Detailed Analysis
+            </Link>
           </div>
         )}
       </div>

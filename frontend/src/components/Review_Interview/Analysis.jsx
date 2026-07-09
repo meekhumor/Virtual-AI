@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from "../../constants";
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Check, ArrowUpRight } from 'lucide-react';
 
 const Analysis = () => {
   const [searchParams] = useSearchParams();
   const interviewId = searchParams.get('interviewId');
 
   const [analysis, setAnalysis] = useState(null);
+  const [interviewMeta, setInterviewMeta] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedMetric, setSelectedMetric] = useState(null);
@@ -32,7 +34,7 @@ const Analysis = () => {
     ],
     "Power Words": [
       "Use action verbs",
-      "Include industry-specific terminology",
+      "Include industry specific terminology",
       "Incorporate quantifiable achievements",
       "Use positive, confident language",
       "Add relevant technical terms",
@@ -40,7 +42,7 @@ const Analysis = () => {
     "Communication": [
       "Structure answers using STAR method",
       "Be concise and direct",
-      "Avoid over-explaining",
+      "Avoid over explaining",
       "Use clear, specific examples",
       "Practice active listening",
     ],
@@ -69,7 +71,6 @@ const Analysis = () => {
     setLoading(true);
     setError(null);
 
-    // Try GET first (cached result)
     try {
       const getRes = await fetch(`${apiBaseUrl}/api/interviews/${interviewId}/analysis/`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -83,7 +84,6 @@ const Analysis = () => {
       }
     } catch (_) {}
 
-    // Fall back to POST (generate new analysis)
     try {
       const postRes = await fetch(`${apiBaseUrl}/api/interviews/${interviewId}/analyze/`, {
         method: 'POST',
@@ -105,10 +105,26 @@ const Analysis = () => {
   };
 
   useEffect(() => {
-    if (interviewId) fetchAnalysis();
+    const fetchInterviewMeta = async () => {
+      try {
+        const res = await fetch(`${apiBaseUrl}/api/interviews/${interviewId}/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setInterviewMeta(data);
+        }
+      } catch (err) {
+        console.error("Error fetching interview metadata:", err);
+      }
+    };
+
+    if (interviewId) {
+      fetchAnalysis();
+      fetchInterviewMeta();
+    }
   }, [interviewId]);
 
-  // Helper: score (0-10) → status
   const scoreStatus = (score) => (score !== null && score >= 6 ? 'success' : 'error');
 
   const scoreCard = (label, score, tipKey) => ({
@@ -119,18 +135,21 @@ const Analysis = () => {
     tipKey,
   });
 
+  const totalQuestions = interviewMeta?.questions?.length || 1;
+  const timeSpent = interviewMeta?.duration_seconds || 0;
+  const avgTimePerQuestion = timeSpent > 0 ? timeSpent / totalQuestions : null;
+
   const metricCards = analysis
     ? [
         scoreCard('Overall Score', analysis.overall_score, null),
         scoreCard('Communication', analysis.communication_score, 'Communication'),
         scoreCard('Technical', analysis.technical_score, 'Technical'),
-        scoreCard('Confidence', analysis.confidence_score, 'Confidence'),
         {
-          title: 'Pace',
-          value: analysis.pace_wpm !== null ? `${Math.round(analysis.pace_wpm)}` : '—',
-          unit: 'words/min',
-          status: analysis.pace_wpm && analysis.pace_wpm > 180 ? 'error' : 'success',
-          tipKey: 'Pace',
+          title: 'Avg Time / Question',
+          value: avgTimePerQuestion !== null ? `${Math.round(avgTimePerQuestion)}` : '—',
+          unit: 'seconds',
+          status: 'success',
+          tipKey: null,
         },
         {
           title: 'Filler Words',
@@ -151,7 +170,12 @@ const Analysis = () => {
 
   return (
     <div className="min-h-screen bg-black mt-12 mb-20">
-      <div className="max-w-4xl mx-auto space-y-10 px-4">
+      <div className="max-w-4xl mx-auto space-y-6 px-4">
+        <div className="flex justify-between items-center mb-4">
+          <Link to={`/review/${interviewId}`} className="text-gray-400 hover:text-gray-200 text-sm">
+            &lt; Back to Review Questions
+          </Link>
+        </div>
         <h1 className="text-white text-center text-2xl">AI Feedback</h1>
 
         {/* No interview ID */}
@@ -211,7 +235,7 @@ const Analysis = () => {
               {metricCards.map((metric, index) => (
                 <div
                   key={index}
-                  className="bg-darkblue bg-opacity-40 p-6 rounded-lg shadow-lg hover:scale-105 cursor-pointer transition-all duration-300"
+                  className="bg-darkblue bg-opacity-40 p-6 rounded-lg shadow-lg cursor-pointer transition-all duration-300"
                 >
                   <div className="flex flex-col gap-3">
                     <h3 className="text-white text-lg font-semibold">{metric.title}</h3>
@@ -238,11 +262,12 @@ const Analysis = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {analysis.strengths?.length > 0 && (
                 <div className="bg-darkblue bg-opacity-40 p-6 rounded-lg shadow-lg">
-                  <h2 className="text-white text-lg font-semibold mb-3">✅ Strengths</h2>
-                  <ul className="space-y-2">
+                  <h2 className="text-white text-lg font-semibold mb-4">Strengths</h2>
+                  <ul className="space-y-3">
                     {analysis.strengths.map((s, i) => (
-                      <li key={i} className="text-gray-300 text-sm flex items-start gap-2">
-                        <span className="text-green-500 mt-1">•</span>{s}
+                      <li key={i} className="text-gray-300 text-sm md:text-base flex items-start gap-2.5">
+                        <Check className="text-green-500 w-4 h-4 mt-1 shrink-0" />
+                        <span>{s}</span>
                       </li>
                     ))}
                   </ul>
@@ -250,11 +275,12 @@ const Analysis = () => {
               )}
               {analysis.improvements?.length > 0 && (
                 <div className="bg-darkblue bg-opacity-40 p-6 rounded-lg shadow-lg">
-                  <h2 className="text-white text-lg font-semibold mb-3">📈 Areas to Improve</h2>
-                  <ul className="space-y-2">
+                  <h2 className="text-white text-lg font-semibold mb-4">Areas to Improve</h2>
+                  <ul className="space-y-3">
                     {analysis.improvements.map((s, i) => (
-                      <li key={i} className="text-gray-300 text-sm flex items-start gap-2">
-                        <span className="text-yellow-400 mt-1">•</span>{s}
+                      <li key={i} className="text-gray-300 text-sm md:text-base flex items-start gap-2.5">
+                        <ArrowUpRight className="text-yellow-400 w-4 h-4 mt-1 shrink-0" />
+                        <span>{s}</span>
                       </li>
                     ))}
                   </ul>
@@ -262,14 +288,14 @@ const Analysis = () => {
               )}
             </div>
 
-            {/* Re-generate */}
+            {/* Explore Recommended Courses */}
             <div className="text-center">
-              <button
-                onClick={fetchAnalysis}
+              <Link
+                to="/courses"
                 className="text-blue1 border border-blue1 px-6 py-2 rounded-lg hover:bg-blue1 hover:text-white transition"
               >
-                Re-generate Analysis
-              </button>
+                Explore Recommended Courses
+              </Link>
             </div>
           </>
         )}
@@ -294,7 +320,7 @@ const Analysis = () => {
               </div>
               <div className="space-y-4">
                 {(improvementTips[selectedMetric.tipKey] || []).map((tip, index) => (
-                  <div key={index} className="flex items-start gap-4 pl-6 hover:bg-white/5 p-3 rounded-lg">
+                  <div key={index} className="flex items-start gap-4 rounded-lg">
                     <div className="text-blue1 mt-1 bg-darkblue p-1 rounded-full border border-blue1/20">
                       <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />

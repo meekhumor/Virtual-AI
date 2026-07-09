@@ -482,8 +482,15 @@ class InterviewStatusUpdateView(APIView):
             return DRFResponse({'detail': f'Invalid status: {new_status}'}, status=400)
 
         interview.status = new_status
-        interview.save(update_fields=['status', 'updated_at'])
-        return DRFResponse({'id': interview.id, 'status': interview.status})
+        update_fields = ['status', 'updated_at']
+
+        duration_seconds = request.data.get('duration_seconds')
+        if duration_seconds is not None:
+            interview.duration_seconds = int(duration_seconds)
+            update_fields.append('duration_seconds')
+
+        interview.save(update_fields=update_fields)
+        return DRFResponse({'id': interview.id, 'status': interview.status, 'duration_seconds': interview.duration_seconds})
 
 class InterviewAnalysisView(APIView):
     """POST /api/interviews/{id}/analyze/ — generate and cache analysis."""
