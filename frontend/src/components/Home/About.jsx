@@ -1,46 +1,51 @@
 import React from 'react';
-import { Users, Target, BookOpen, Code, Github, Linkedin } from 'lucide-react';
+import { Github, Linkedin, Mic, Upload, Video, LineChart } from 'lucide-react';
 
 const teamMembers = [
-  { name: 'Om Mukherjee', role: 'Student', github: '#', linkedin: '#' },
-  { name: 'Aryan Yadav', role: 'Student', github: '#', linkedin: '#' },
-  { name: 'Aman Vatsa', role: 'Student', github: '#', linkedin: '#' },
+  { name: 'Om Mukherjee', role: 'Student', github: 'https://github.com/meekhumor', linkedin: 'https://www.linkedin.com/in/om-mukherjee7' },
+  { name: 'Aryan Yadav', role: 'Student', github: 'https://github.com/Aryan-y-77', linkedin: '#' },
+  { name: 'Aman Vatsa', role: 'Student', github: 'https://github.com/amanv13', linkedin: '#' },
 ];
 
 const features = [
   {
-    icon: <Users className="w-10 h-10 text-blue1" />, 
-    title: 'AI-Powered Interviews',
-    description: 'Advanced AI-driven mock interviews tailored to your career needs.'
+    icon: <Mic className="w-10 h-10 text-blue1" />, 
+    title: 'Interactive Simulator',
+    description: 'Engage in conversational mock sessions powered by dynamic voice-to-text integration.'
   },
   {
-    icon: <Target className="w-10 h-10 text-blue1" />, 
-    title: 'Personalized Feedback',
-    description: 'Get real-time AI feedback to improve your interview skills.'
+    icon: <Upload className="w-10 h-10 text-blue1" />, 
+    title: 'Resume Customization',
+    description: 'Upload your resume to trigger questions curated specifically for your stack and background.'
   },
   {
-    icon: <BookOpen className="w-10 h-10 text-blue1" />, 
-    title: 'Comprehensive Guide',
-    description: 'Access guides, sample answers, and real-world interview questions.'
+    icon: <Video className="w-10 h-10 text-blue1" />, 
+    title: 'Real Mode Session',
+    description: 'Practice under pressure with fullscreen restrictions and video responses recording.'
+  },
+  {
+    icon: <LineChart className="w-10 h-10 text-blue1" />, 
+    title: 'Deep AI Feedback',
+    description: 'Receive immediate metrics on speaking pace (WPM), confidence, filler word count, and feedback.'
   }
 ];
 
 export default function About() {
   return (
-    <div className="max-w-4xl mx-auto px-6 py-16 text-white">
+    <div className="max-w-6xl mx-auto px-6 py-16 text-white">
       <div className="text-center mb-16">
         <h1 className="text-4xl font-bold mb-4">About</h1>
-        <p className="text-gray-400 max-w-3xl mx-auto">
-          Built by a team of four passionate developers, Virtual Interviewer is designed to help professionals excel in their job interviews using cutting-edge AI technology.
+        <p className="text-gray-400 max-w-3xl mx-auto text-sm md:text-base leading-relaxed">
+          Built by a team of three passionate developers, Virtual Interviewer is designed to help you excel in your job interviews using AI technology.
         </p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-8 mb-16">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
         {features.map((feature, index) => (
-          <div key={index} className="bg-darkblue/40 p-6 rounded-xl shadow-lg text-center">
+          <div key={index} className="bg-darkblue/40 p-6 rounded-xl border border-darkblue/20 shadow-lg text-center flex flex-col items-center">
             <div className="mb-4 flex justify-center">{feature.icon}</div>
-            <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-            <p className="text-gray-400">{feature.description}</p>
+            <h3 className="text-base font-semibold mb-2">{feature.title}</h3>
+            <p className="text-gray-400 text-xs md:text-sm leading-relaxed">{feature.description}</p>
           </div>
         ))}
       </div>

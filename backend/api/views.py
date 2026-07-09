@@ -609,3 +609,19 @@ class VideoUploadView(APIView):
         except Exception as e:
             logger.exception("Video upload failed")
             return DRFResponse({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ContactInquiryView(APIView):
+    permission_classes = []
+
+    def post(self, request):
+        name = request.data.get('name')
+        email = request.data.get('email')
+        subject = request.data.get('subject')
+        message = request.data.get('message')
+
+        if not name or not email or not message:
+            return DRFResponse({"error": "Name, email, and message are required fields."}, status=status.HTTP_400_BAD_REQUEST)
+
+        logger.info(f"Contact Inquiry: From={name} <{email}>, Subject='{subject}', Msg='{message}'")
+        return DRFResponse({"status": "success", "message": "Inquiry submitted successfully!"}, status=status.HTTP_200_OK)

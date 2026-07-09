@@ -16,6 +16,7 @@ from .views import (
     InterviewAnalysisGetView,
     InterviewStatusUpdateView,
     VideoUploadView,
+    ContactInquiryView,
 )
 
 urlpatterns = [
@@ -46,4 +47,7 @@ urlpatterns = [
     # Status update
     path('interviews/<int:interview_id>/status/', InterviewStatusUpdateView.as_view(), name='interview-status'),
     path('interviews/video/upload/', VideoUploadView.as_view(), name='video-upload'),
+
+    # Support / Contact
+    path('contact/', ContactInquiryView.as_view(), name='contact-inquiry'),
 ]

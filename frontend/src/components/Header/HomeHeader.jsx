@@ -5,6 +5,7 @@ import LoginModal from "../Modal/LoginModal";
 export default function HomeHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const isLoggedIn = !!localStorage.getItem("token");
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -17,7 +18,7 @@ export default function HomeHeader() {
     <header className="shadow sticky z-50 top-0">
       <nav className="bg-black border-gray-200 px-4 lg:px-6 py-2.5">
         <div className="flex flex-wrap justify-between items-center mx-auto max-w-screen-xl mt-2">
-          <Link to="/" className="flex items-center">
+          <Link to={isLoggedIn ? "/dashboard" : "/"} className="flex items-center">
             <img className=" w-8 rounded-full" src="logo.png" />
             <div className="text-2xl ml-4 text-white font-extrabold">
               Virtual <span className="text-blue1">AI</span>
@@ -43,25 +44,34 @@ export default function HomeHeader() {
           </div>
 
           <div className="flex items-center lg:order-2">
-
-            <div className=" flex items-center justify-center">
+            {isLoggedIn ? (
               <Link
-                to="#"
-                onClick={openModal}
-                className="text-black1 transition duration-200 ease-in-out bg-white hover:bg-gray-900 hover:text-white font-medium rounded-3xl text-sm px-5 lg:px-5 py-2 lg:py-2.5 mr-2 "
+                to="/dashboard"
+                className="text-white transition duration-200 ease-in-out bg-blue1 hover:bg-darkblue font-semibold rounded-3xl text-sm px-5 py-2 lg:py-2.5 mr-2 focus:outline-none"
               >
-                Login
+                Dashboard
               </Link>
-              <LoginModal isOpen={isModalOpen} onClose={closeModal} />
-            </div>
+            ) : (
+              <>
+                <div className=" flex items-center justify-center">
+                  <Link
+                    to="#"
+                    onClick={openModal}
+                    className="text-black1 transition duration-200 ease-in-out bg-white hover:bg-gray-900 hover:text-white font-medium rounded-3xl text-sm px-5 lg:px-5 py-2 lg:py-2.5 mr-2 "
+                  >
+                    Login
+                  </Link>
+                  <LoginModal isOpen={isModalOpen} onClose={closeModal} />
+                </div>
 
-            
-            <Link
-              to="/register"
-              className="text-white transition duration-200 ease-in-out bg-blue1 hover:bg-darkblue font-medium rounded-3xl text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 focus:outline-none"
-            >
-              Sign Up
-            </Link>
+                <Link
+                  to="/register"
+                  className="text-white transition duration-200 ease-in-out bg-blue1 hover:bg-darkblue font-medium rounded-3xl text-sm px-4 lg:px-5 py-2 lg:py-2.5 mr-2 focus:outline-none"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
 
           <div className="hidden justify-between items-center w-full lg:flex lg:w-auto lg:order-1">

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, Mail, Phone, Clock, Users, BookOpen, Target, HelpCircle, AlertCircle } from 'lucide-react';
+import { API_BASE_URL } from '../../constants';
 
 // Contact Page Component
 export default function Contact(){
@@ -9,10 +10,37 @@ export default function Contact(){
     subject: '',
     message: ''
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null); // { type: 'success' | 'error', message: string }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
+      setSubmitStatus({ type: 'error', message: 'Please fill in all required fields (Name, Email, Message).' });
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitStatus(null);
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/contact/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Thank you! Your message has been sent successfully.');
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      } else {
+        setSubmitStatus({ type: 'error', message: data.error || 'Failed to send message. Please try again.' });
+      }
+    } catch (err) {
+      setSubmitStatus({ type: 'error', message: 'Network error. Please check your connection and try again.' });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -52,12 +80,22 @@ export default function Contact(){
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {submitStatus && (
+            <div className={`p-3 rounded-lg text-sm border ${
+              submitStatus.type === 'success' 
+                ? 'bg-green-500/10 border-green-500/50 text-green-400' 
+                : 'bg-red-500/10 border-red-500/50 text-red-400'
+            }`}>
+              {submitStatus.message}
+            </div>
+          )}
           <input
             type="text"
             placeholder="Your Name"
             className="w-full p-3 rounded-lg bg-darkblue bg-opacity-40 text-white border-0 focus:ring-2 focus:ring-blue1"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            disabled={submitting}
           />
           <input
             type="email"
@@ -65,6 +103,7 @@ export default function Contact(){
             className="w-full p-3 rounded-lg bg-darkblue bg-opacity-40 text-white border-0 focus:ring-2 focus:ring-blue1"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            disabled={submitting}
           />
           <input
             type="text"
@@ -72,6 +111,7 @@ export default function Contact(){
             className="w-full p-3 rounded-lg bg-darkblue bg-opacity-40 text-white border-0 focus:ring-2 focus:ring-blue1"
             value={formData.subject}
             onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+            disabled={submitting}
           />
           <textarea
             placeholder="Your Message"
@@ -79,9 +119,14 @@ export default function Contact(){
             className="w-full p-3 rounded-lg bg-darkblue bg-opacity-40 text-white border-0 focus:ring-2 focus:ring-blue1"
             value={formData.message}
             onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+            disabled={submitting}
           />
-          <button className="bg-blue1 text-white rounded-3xl py-3 px-6 w-full hover:bg-darkblue cursor-pointer">
-            Send Message
+          <button 
+            type="submit"
+            disabled={submitting}
+            className="bg-blue1 text-white rounded-3xl py-3 px-6 w-full hover:bg-darkblue cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            {submitting ? 'Sending Message...' : 'Send Message'}
           </button>
         </form>
       </div>
