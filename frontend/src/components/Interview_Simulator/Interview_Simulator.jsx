@@ -96,7 +96,7 @@ export default function Interview_Simulator() {
   const [editorLanguage, setEditorLanguage] = useState("python");
   const [silenceTimeout, setSilenceTimeout] = useState(() => {
     const stored = sessionStorage.getItem("silenceTimeout");
-    return stored ? parseInt(stored, 10) : 4000; // default 4 seconds
+    return stored ? parseInt(stored, 10) : 0; // default to 0 (Manual)
   });
 
   // interview state   
@@ -308,6 +308,29 @@ export default function Interview_Simulator() {
       lastTranscriptRef.current = "";
     }
   }, [handleSendMessage, resetTranscript, mode]);
+
+  const submitTypedResponse = useCallback(async (text) => {
+    const trimmedText = text.trim();
+    if (trimmedText) {
+      SpeechRecognition.stopListening();
+      setUserSpeaking(false);
+      setProcessing(true); 
+      
+      let videoUrl = "";
+      if (mode === "REAL") {
+        try {
+          const videoBlob = await stopMediaRecorder();
+          if (videoBlob) {
+            videoUrl = await uploadVideoBlob(videoBlob);
+          }
+        } catch (err) {
+          console.error("Video capture/upload error:", err);
+        }
+      }
+
+      handleSendMessage(trimmedText, videoUrl);
+    }
+  }, [handleSendMessage, mode]);
 
   const startMediaRecorder = (stream) => {
     if (!stream) return;
@@ -643,13 +666,13 @@ export default function Interview_Simulator() {
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !e.shiftKey && textInput.trim()) {
                           e.preventDefault();
-                          handleSendMessage(textInput.trim());
+                          submitTypedResponse(textInput.trim());
                           setTextInput("");
                         }
                       }}
                     />
                     <button
-                      onClick={() => { if (textInput.trim()) { handleSendMessage(textInput.trim()); setTextInput(""); } }}
+                      onClick={() => { if (textInput.trim()) { submitTypedResponse(textInput.trim()); setTextInput(""); } }}
                       disabled={!textInput.trim() || !isConnected}
                       className="p-2.5 rounded-xl bg-blue1 text-white hover:bg-darkblue transition-all"
                     >
