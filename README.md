@@ -20,43 +20,44 @@
   <img src="https://github.com/user-attachments/assets/ef9fff91-264b-4029-993c-1c353f7cb78b" width="550" alt="Virtual AI Banner" />
 </p>
 
----
-
 ## Overview
 
-**Virtual AI** full stack platform that simulates realistic job interviews using real time voice, text, video, and code evaluation. Powered by an intelligent **LangGraph ReAct agent** with **Google Gemini**, Virtual AI dynamically adapts its questions based on your uploaded resume, selected job level, and interview mode.Also candidates receive immediate feedback, spoken questions via speech synthesis, and post interview analytics.
+**Virtual AI** is full stack platform that simulates realistic job interviews using real time voice, text, video, and code evaluation. Powered by an intelligent **LangGraph ReAct agent** with **Google Gemini**, Virtual AI dynamically adapts its questions based on your uploaded resume, selected job level, and interview mode.Also candidates receive immediate feedback, spoken questions via speech synthesis, and post interview analytics.
 
----
 
 ## Table of Contents
 
-- [Features](#-features)
-- [System Architecture](#-system-architecture)
-- [Tech Stack](#-tech-stack)
-- [Database Schema](#-database-schema)
-- [Project Setup](#-project-setup)
+- [Features](#features)
+- [System Architecture](#system-architecture)
+- [Tech Stack](#tech-stack)
+- [Database Schema](#database-schema)
+- [Project Setup](#project-setup)
   - [Backend Setup](#1-backend-setup)
   - [Frontend Setup](#2-frontend-setup)
-- [Live Links](#-live-links)
-- [Team Members & Mentors](#-team-members--mentors)
-- [Screenshots Showcase](#-screenshots-showcase)
+- [Live Links](#live-links)
+- [Team Members & Mentors](#team-members--mentors)
+- [Screenshots Showcase](#screenshots)
 
----
 
 ## Features
 
-- **Real Time Voice & Speech Interaction**: Hands-free speech-to-text (STT) transcription and automated speech synthesis (TTS) for natural, conversational interviews.
-- **LangGraph ReAct AI Agent**: Context-aware AI interviewer that dynamically formulates targeted follow-up questions, evaluates technical accuracy, and scores candidate turns in real time.
+- **Real Time Voice & Speech Interaction**: Hands free speech-to-text (STT) transcription and automated speech synthesis (TTS) for natural interviews.
+- **LangGraph ReAct AI Agent**: Context aware AI interviewer that dynamically formulates targeted follow up questions, evaluates technical accuracy, and scores candidate turns in real time.
 - **Zero Downtime LLM Failover**: Primary LLM integration with **Google Gemini**, automatically failing over to **Llama-3.3-70B** without breaking active sessions.
 - **Resume PDF Parsing & Context Injection**: Extracts resume text via `pdfplumber` and injects up to 3,000 characters of background context into the AI agent prompt.
 - **Customizable Settings & Modes**: Supports Entry, Intermediate, and Senior experience levels with distinct evaluation modes.
 - **Post Interview Analytics**: Evaluates overall, technical, communication, and confidence scores alongside word pace (WPM), filler word frequency, power words, strengths, and gives tips based on it.
 
----
 
 ## System Architecture
 
----
+<p align="center">
+<img width="800" alt="virtual ai" src="https://github.com/user-attachments/assets/68b3ab20-2127-4efb-b7fb-2b1ec77b740c" />
+</p>
+<br>
+<p align="center">
+<img width="800" alt="System Arch" src="https://github.com/user-attachments/assets/2089d3e1-de8f-489d-8ef9-bcfde79895df" />
+</p>
 
 ## Tech Stack
 
@@ -69,15 +70,13 @@
 | **Database** | PostgreSQL (Supabase) & Django ORM) |
 | **PDF Processing** | `pdfplumber` |
 
----
 
 ## Database Schema
 
 <p align="center">
-  <img width="500" alt="Database Schema Diagram" src="https://github.com/user-attachments/assets/a48a3bf4-3433-433b-8bb2-928e05c6c644" />
+  <img width="661" height="460" alt="Screenshot from 2026-08-01 21-38-38" src="https://github.com/user-attachments/assets/dd3f47d8-77e0-49a1-bc4b-aaf154bb28d9" />
 </p>
 
----
 
 ## Project Setup
 
@@ -101,8 +100,6 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-> **Note**: Environment variables (`.env`) should contain: `SUPABASE_URL`, `SUPABASE_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `FRONTEND_URL`.
-
 ### 2. Frontend Setup
 
 ```bash
@@ -116,16 +113,11 @@ npm install
 npm run dev
 ```
 
----
-
 ## Live Links
 
 - **Hosted Website**: [usevirtual-ai.vercel.app](https://usevirtual-ai.vercel.app)
 - **Hosted Backend**: [virtual-ai-iimu.onrender.com](https://virtual-ai-iimu.onrender.com)
-- **Demo Video**: [Google Drive Folder](https://drive.google.com/drive/u/0/folders/1px37x2HPjJ5sZkBsWWsPC9VrWcuJcfWN)
-- **Screenshots Drive**: [Google Drive Folder](https://drive.google.com/drive/u/0/folders/1IXCwQUXPXyfOV45liRXjdBZev9kLT6cT)
-
----
+- **Demo Video**: [Demo Video](https://drive.google.com/file/d/1AkIw6s-9EwqwYNKcpbvpBQVN7Saz-8Ot/view?usp=sharing)
 
 ## Team Members & Mentors
 
@@ -142,9 +134,7 @@ npm run dev
 | **Harshala Mahajan** | `mharshala334@gmail.com` | [@harshala334](https://github.com/harshala334) |
 | **Sayali Khandare** | `sayalisayali924@gmail.com` | [@Toppersayali](https://github.com/Toppersayali) |
 
----
-
-## 📱 Screenshots 
+## Screenshots 
 <div style="display: flex; flex-wrap: wrap; gap: 20px;">
 
 ### Landing Page  
@@ -176,5 +166,9 @@ npm run dev
 
 ### Job based Interview  
 <img src="https://github.com/user-attachments/assets/a8c5ffff-4cde-4efa-aa14-e41fdfc1cb98" width="700" style="height: auto;"/>
+
+### Interview Simulator
+<img width="1918" height="968" alt="Screenshot from 2026-08-01 23-15-31" src="https://github.com/user-attachments/assets/d30d4560-c504-420c-85df-a4cb858f715c" />
+
 
 </div>
