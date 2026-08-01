@@ -80,7 +80,7 @@ async def _connect_and_ready(interview, test_user, agent_reply="Can you elaborat
     Mocks must be started by the caller.
     """
     comm = WebsocketCommunicator(application, _ws_url(interview.id))
-    connected, _ = await comm.connect()
+    connected, _ = await comm.connect(timeout=5)
     assert connected, "Connection unexpectedly failed in _connect_and_ready"
     await comm.receive_json_from(timeout=5)   # "connected"
     await comm.receive_json_from(timeout=5)   # first AI question
@@ -91,7 +91,7 @@ async def test_unauthenticated_connection_is_rejected(interview):
     """AnonymousUser should be rejected before accept() is called."""
     with _inject_user(AnonymousUser()):
         comm = WebsocketCommunicator(application, _ws_url(interview.id))
-        connected, _ = await comm.connect()
+        connected, _ = await comm.connect(timeout=5)
         assert not connected, "Unauthenticated connection must be rejected"
         await comm.disconnect()
 
@@ -101,7 +101,7 @@ async def test_authenticated_connection_accepted(interview, test_user):
     """Valid user gets accepted, receives 'connected' then the first AI question."""
     with _inject_user(test_user), _mock_llm(), _mock_groq(), _mock_agent():
         comm = WebsocketCommunicator(application, _ws_url(interview.id))
-        connected, _ = await comm.connect()
+        connected, _ = await comm.connect(timeout=5)
         assert connected, "Authenticated user should be accepted"
 
         msg1 = await comm.receive_json_from(timeout=5)
@@ -124,7 +124,7 @@ async def test_wrong_user_is_rejected(interview, db):
     )
     with _inject_user(other):
         comm = WebsocketCommunicator(application, _ws_url(interview.id))
-        connected, _ = await comm.connect()
+        connected, _ = await comm.connect(timeout=5)
         assert not connected, "Non-owner must be rejected for another user's interview"
         await comm.disconnect()
 
@@ -155,7 +155,7 @@ async def test_ws_does_not_close_between_ai_and_user_turns(interview, test_user)
     """After the AI asks a question, the WS must remain writable for the user."""
     with _inject_user(test_user), _mock_llm("Describe a challenge."), _mock_groq(), _mock_agent("Good. Next?"):
         comm = WebsocketCommunicator(application, _ws_url(interview.id))
-        connected, _ = await comm.connect()
+        connected, _ = await comm.connect(timeout=5)
         assert connected
 
         await comm.receive_json_from(timeout=5)  
@@ -193,7 +193,7 @@ async def test_multiple_turns_keep_ws_alive(interview, test_user):
     with _inject_user(test_user), _mock_llm(), _mock_groq():
         with patch("api.consumers.create_react_agent", side_effect=make_agent):
             comm = WebsocketCommunicator(application, _ws_url(interview.id))
-            connected, _ = await comm.connect()
+            connected, _ = await comm.connect(timeout=5)
             assert connected
             await comm.receive_json_from(timeout=5)   # connected
             await comm.receive_json_from(timeout=5)   # first question
@@ -276,7 +276,7 @@ async def test_disconnect_is_logged(interview, test_user):
 
         try:
             comm = WebsocketCommunicator(application, _ws_url(interview.id))
-            await comm.connect()
+            await comm.connect(timeout=5)
             await comm.receive_json_from(timeout=5)  
             await comm.receive_json_from(timeout=5)   
             await comm.disconnect()
