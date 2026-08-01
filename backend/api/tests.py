@@ -8,6 +8,9 @@ from django.contrib.auth.models import AnonymousUser
 from api.models import User, Interview, Question
 from backend.asgi import application
 
+
+# Created using gemini flash 3.5
+
 def _ws_url(interview_id):
     return f"/ws/interview/{interview_id}/"
 
@@ -274,8 +277,8 @@ async def test_disconnect_is_logged(interview, test_user):
         try:
             comm = WebsocketCommunicator(application, _ws_url(interview.id))
             await comm.connect()
-            await comm.receive_json_from(timeout=5)   # connected
-            await comm.receive_json_from(timeout=5)   # first question
+            await comm.receive_json_from(timeout=5)  
+            await comm.receive_json_from(timeout=5)   
             await comm.disconnect()
         finally:
             logger.removeHandler(cap)

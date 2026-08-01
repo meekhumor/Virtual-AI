@@ -17,13 +17,9 @@ from django.db.models import Max
 logger = logging.getLogger(__name__)
 
 
-# ---------------------------------------------------------------------------
-# Pure async helpers (NOT @tool — called directly by the consumer)
-# ---------------------------------------------------------------------------
-
 @database_sync_to_async
 def _get_resume_text(interview_id: str) -> str:
-    """Fetch stored parsed resume text. Never re-downloads the PDF."""
+    """Fetch stored parsed resume text. Never re downloads the PDF."""
     try:
         interview = Interview.objects.get(id=interview_id)
         resume = Resume.objects.filter(user=interview.user).order_by('-created_at').first()
@@ -57,7 +53,6 @@ def _save_turn_to_db(interview_id: str, candidate_response: str, feedback: str, 
         if not current_question:
             raise ValueError("No current question found for this interview.")
         
-        # Save response for the current question
         Response.objects.create(
             interview=interview,
             question=current_question,
@@ -131,11 +126,6 @@ def _get_history_summary(interview_id: str) -> list:
     )
     return [f"Candidate: {r['text']} | Feedback: {r['ai_feedback']}" for r in reversed(responses)]
 
-
-# ---------------------------------------------------------------------------
-# Tools available to the LangGraph agent
-# ---------------------------------------------------------------------------
-
 @tool
 async def save_interview_turn(interview_id: str, candidate_response: str, feedback: str, next_question: str, score: int = None) -> str:
     """Save the candidate's response feedback and the next interview question to the database.
@@ -154,31 +144,24 @@ async def save_interview_turn(interview_id: str, candidate_response: str, feedba
         logger.exception("Failed to save turn in tool")
         return f"Error saving turn: {e}"
 
-
-# ---------------------------------------------------------------------------
-# Interview WebSocket Consumer
-# ---------------------------------------------------------------------------
-
 class InterviewConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         self.interview_id = self.scope['url_route']['kwargs']['interview_id']
         self.user = self.scope.get('user', AnonymousUser())
-        self.messages = []  # Persistent message history for multi-turn memory
-
+        self.messages = []  
         if not await _validate_interview(self.interview_id, self.user):
             await self.close()
             return
 
         await self.accept()
 
-        # Fetch context once at connect time
         details = await _get_interview_details(self.interview_id)
         self.level = details['level']
         self.mode = details['mode']
         self.resume = await _get_resume_text(self.interview_id)
 
-        # ── Primary LLM: Gemini ──────────────────────────────────────────────
+        # Gemini
         self.llm_primary = ChatGoogleGenerativeAI(
             model="gemini-2.0-flash",
             google_api_key=os.getenv('GEMINI_API_KEY'),
@@ -186,14 +169,13 @@ class InterviewConsumer(AsyncWebsocketConsumer):
             convert_system_message_to_human=False,
         )
 
-        # ── Fallback LLM: Groq (llama-3.3-70b) ─────────────────────────────
+        # Grok (fallback)
         self.llm_fallback = ChatGroq(
             model="llama-3.3-70b-versatile",
             api_key=os.getenv('GROQ_API_KEY'),
             temperature=0.7,
         )
 
-        # Active LLM — starts as Gemini
         self.llm = self.llm_primary
 
         system_prompt = (
@@ -299,7 +281,6 @@ class InterviewConsumer(AsyncWebsocketConsumer):
 
         history = await _get_history_summary(self.interview_id)
 
-        # Build agent input matching the keys the agent understands
         agent_input = {
             "messages": self.messages + [
                 HumanMessage(

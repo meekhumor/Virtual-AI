@@ -362,21 +362,21 @@ class SubmitResponseView(APIView):
         )
 
         prompt = f"""You are an expert interviewer conducting a {interview.level.lower()} level {interview.mode.lower()} interview.
-The candidate's resume: {resume_text or 'No resume provided.'}
+                The candidate's resume: {resume_text or 'No resume provided.'}
 
-Previous conversation:
-{history_context or 'This is the first question.'}
+                Previous conversation:
+                {history_context or 'This is the first question.'}
 
-The candidate was just asked: "{question.text}"
-Their response: "{text}"
+                The candidate was just asked: "{question.text}"
+                Their response: "{text}"
 
-Provide concise feedback on this response and generate one relevant follow-up question.
-Respond ONLY with valid JSON in exactly this format:
-{{
-    "feedback": "<your feedback here>",
-    "next_question": "<your follow-up question here>",
-    "score": <integer 0-10>
-}}"""
+                Provide concise feedback on this response and generate one relevant follow-up question.
+                Respond ONLY with valid JSON in exactly this format:
+                {{
+                    "feedback": "<your feedback here>",
+                    "next_question": "<your follow-up question here>",
+                    "score": <integer 0-10>
+                }}"""
 
         feedback = "Good response, but please elaborate further."
         next_question_text = "Can you provide more details?"
@@ -446,9 +446,9 @@ class StartInterviewView(APIView):
         resume_text = _get_resume_text(user)
 
         prompt = f"""You are an expert interviewer conducting a {level.lower()} level {mode.lower()} interview.
-The candidate's resume: {resume_text or 'No resume provided.'}
-Generate one clear, specific opening interview question appropriate for this level and mode.
-Return ONLY the question text, nothing else."""
+                The candidate's resume: {resume_text or 'No resume provided.'}
+                Generate one clear, specific opening interview question appropriate for this level and mode.
+                Return ONLY the question text, nothing else."""
 
         question_text = "Tell me about yourself."
         try:
@@ -521,24 +521,23 @@ class InterviewAnalysisView(APIView):
         )
 
         prompt = f"""You are an expert interview evaluator. Analyze the following interview transcript and return a JSON report.
+                Interview: {interview.level} level {interview.mode} — "{interview.title}"
+                Transcript:
+                {transcript}
 
-Interview: {interview.level} level {interview.mode} — "{interview.title}"
-Transcript:
-{transcript}
-
-Return ONLY valid JSON with exactly these fields:
-{{
-    "overall_score": <float 0-10>,
-    "communication_score": <float 0-10>,
-    "technical_score": <float 0-10>,
-    "confidence_score": <float 0-10>,
-    "pace_wpm": <estimated words per minute as float>,
-    "filler_word_count": <integer>,
-    "power_word_count": <integer>,
-    "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
-    "improvements": ["<improvement 1>", "<improvement 2>", "<improvement 3>"],
-    "summary": "<2-3 sentence overall summary>"
-}}"""
+                Return ONLY valid JSON with exactly these fields:
+                {{
+                    "overall_score": <float 0-10>,
+                    "communication_score": <float 0-10>,
+                    "technical_score": <float 0-10>,
+                    "confidence_score": <float 0-10>,
+                    "pace_wpm": <estimated words per minute as float>,
+                    "filler_word_count": <integer>,
+                    "power_word_count": <integer>,
+                    "strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
+                    "improvements": ["<improvement 1>", "<improvement 2>", "<improvement 3>"],
+                    "summary": "<2-3 sentence overall summary>"
+                }}"""
 
         try:
             raw = _call_llm(prompt, max_output_tokens=800)

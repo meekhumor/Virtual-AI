@@ -1,0 +1,197 @@
+\documentclass[twocolumn, 10pt, a4paper]{article}
+
+% --- Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[margin=0.65in, top=0.75in, bottom=0.75in]{geometry}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{amsmath, amssymb}
+\usepackage{fancyhdr}
+\usepackage{microtype}
+\usepackage[hidelinks]{hyperref}
+
+% --- Monochromatic Color Palette ---
+\definecolor{monodark}{HTML}{111111}
+\definecolor{monomedium}{HTML}{444444}
+\definecolor{monolight}{HTML}{888888}
+\definecolor{monobg}{HTML}{F4F4F4}
+\definecolor{monoline}{HTML}{CCCCCC}
+
+% --- Typography & Spacing ---
+\setlist[itemize]{noitemsep, topsep=2pt, leftmargin=12pt}
+\setlist[enumerate]{noitemsep, topsep=2pt, leftmargin=12pt}
+
+% Section Headers Formatting (Monochromatic Clean Style)
+\titleformat{\section}
+  {\color{monodark}\large\bfseries\scshape}
+  {\thesection.}{0.4em}{}
+  [\color{monoline}\titlerule]
+
+\titleformat{\subsection}
+  {\color{monomedium}\normalsize\bfseries}
+  {\thesubsection}{0.4em}{}
+
+\titleformat{\subsubsection}
+  {\color{monomedium}\small\bfseries\itshape}
+  {\thesubsubsection}{0.4em}{}
+
+\titlespacing*{\section}{0pt}{10pt}{4pt}
+\titlespacing*{\subsection}{0pt}{8pt}{3pt}
+\titlespacing*{\subsubsection}{0pt}{6pt}{2pt}
+
+% --- Header and Footer ---
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\lhead{\small \color{monomedium} VIRTUAL AI: TECHNICAL SPECIFICATION REPORT}
+\rhead{\small \color{monomedium} AUGUST 2026}
+\lfoot{\small \color{monomedium} MONOCHROMATIC SYSTEM OVERVIEW}
+\rfoot{\small \color{monomedium} PAGE \thepage}
+
+% --- Document ---
+\begin{document}
+
+% --- Title Header (Full Width Across Two Columns) ---
+\twocolumn[
+  \begin{center}
+    {\Huge \bfseries \scshape \color{monodark} Virtual AI} \\[4pt]
+    {\large \itshape \color{monomedium} Real-Time Voice, Text, Video, and Code AI Interview Simulator \& Evaluator} \\[8pt]
+    \rule{\linewidth}{1pt} \\[8pt]
+    {\small \textbf{Authors:} Om Mukherjee, Aryan Yadav, Aman Vatsa \quad | \quad \textbf{Mentors:} Harshala Mahajan, Sayali Khandare} \\
+    {\small \textit{Repository:} \url{https://github.com/meekhumor/virtual_interviewer} \quad | \quad \textit{Deployment:} \url{https://usevirtual-ai.vercel.app}}
+    \\[8pt]
+    \rule{\linewidth}{0.5pt} \\[12pt]
+  \end{center}
+]
+
+% --- Abstract ---
+\begin{abstract}
+\noindent \textbf{\color{monodark} Abstract}---Virtual AI is a full-stack, real-time interview simulation platform built to provide candidate assessment, dynamic follow-up questioning, live coding evaluation, and multi-dimensional NLP feedback. Built using a React frontend and a Django REST Framework + Channels (ASGI) backend, the system leverages a LangGraph ReAct agent powered by Google Gemini 2.0 Flash with an automated Groq Llama-3.3-70B failover mechanism. The platform integrates WebRTC video capture, Web Speech STT/TTS synthesis, an embedded Monaco code editor, resume PDF text parsing, and comprehensive post-interview analytics measuring speech pace (WPM), filler word frequency, technical accuracy, and confidence. This report details the architectural design, database models, AI agent tooling, and engineering decisions.
+\end{abstract}
+
+% --- Section 1: Introduction & Motivation ---
+\section{Introduction}
+Modern technical job interviews demand a combination of domain knowledge, articulate communication, problem-solving under pressure, and structured coding capabilities. Mock interviews are highly effective for candidate preparation but suffer from limited interviewer availability and non-standardized feedback.
+
+\textbf{Virtual AI} addresses this gap by offering an autonomous, AI-driven interview platform that emulates human technical panels. The system adapts dynamically to a candidate's background by parsing their resume and tuning questions to specific experience levels (Entry, Intermediate, Senior) and evaluation modes (Practice vs. Real).
+
+% --- Section 2: Architecture Overview ---
+\section{System Architecture}
+The system architecture follows a decoupled client-server model communicating via both HTTP REST endpoints and persistent bi-directional WebSockets (ASGI).
+
+\subsection{Frontend Subsystem}
+The client application is built with \textbf{React 18} and \textbf{Vite}, styled using a customized dark-mode aesthetic with \textbf{Tailwind CSS}. Key client-side modules include:
+\begin{itemize}
+    \item \textbf{Speech Engine}: Integrates browser Web Speech API (\texttt{react-speech-recognition} for STT and \texttt{speechSynthesis} for TTS) enabling hands-free operation.
+    \item \textbf{Monaco Code Drawer}: An embedded instance of \texttt{@monaco-editor/react} allowing candidates to write and inspect code live during technical questions.
+    \item \textbf{WebRTC Video Capturer}: Controls local video hardware, rendering a live camera preview and capturing \texttt{.webm} video clips.
+    \item \textbf{WebSocket Client}: Managed by a custom React hook (\texttt{useInterviewWS}) handling connection states, token transmission, and message dispatch.
+\end{itemize}
+
+\subsection{Backend Subsystem}
+The server infrastructure is powered by \textbf{Django 5.x} with \textbf{Django REST Framework (DRF)} and \textbf{Django Channels} running on an ASGI event loop (\texttt{daphne}/\texttt{uvicorn}).
+\begin{itemize}
+    \item \textbf{Authentication}: Dual-layer JWT verification via \texttt{SupabaseJWTAuthentication} for REST calls and \texttt{TokenAuthMiddleware} for WebSocket handshakes.
+    \item \textbf{Guest Access}: Features automated guest session creation with a background cleanup handler purging accounts older than 12 hours.
+    \item \textbf{Storage}: Supabase Cloud Storage buckets store profile images (\texttt{profile-images}), uploaded resumes (\texttt{resumes}), and recorded video clips (\texttt{videos}).
+\end{itemize}
+
+% --- Section 3: AI Agent & LLM Pipeline ---
+\section{AI Agent \& LLM Pipeline}
+At the core of Virtual AI is an autonomous ReAct (\textit{Reasoning + Acting}) agent built using the \textbf{LangGraph} framework.
+
+\subsection{System Prompt Engineering}
+The agent is initialized with a structured prompt enforcing strict four-step turn execution:
+\begin{enumerate}
+    \item \textbf{Evaluate}: Assess response accuracy, depth, and clarity (assigning a score 1--10).
+    \item \textbf{Formulate}: Generate a targeted, non-abrupt follow-up question appropriate for the level.
+    \item \textbf{Act (Tool Call)}: Execute \texttt{save\_interview\_turn} to persist data.
+    \item \textbf{Respond}: Output concise candidate-facing text ($\le 35$ words).
+\end{enumerate}
+
+\subsection{ReAct Tool Execution}
+The custom tool \texttt{save\_interview\_turn} encapsulates database persistence within an atomic transaction (\texttt{transaction.atomic()}), performing the following in one step:
+\begin{itemize}
+    \item Creates a \texttt{Response} record with user text, feedback, video link, and metadata.
+    \item Generates and appends the next \texttt{Question} record to the interview sequence.
+\end{itemize}
+
+\subsection{Zero-Downtime LLM Failover}
+To guarantee reliability against rate limits or service disruptions, the system implements a two-tier failover mechanism:
+\begin{align*}
+\text{Primary LLM} &\rightarrow \text{\textbf{Google Gemini 2.0 Flash}} \\
+\text{Fallback LLM} &\rightarrow \text{\textbf{Groq Llama-3.3-70B-Versatile}}
+\end{align*}
+If Gemini returns an API exception during a live session, the consumer (\texttt{\_invoke\_with\_fallback}) dynamically rebuilds the agent using Groq without dropping the WebSocket connection.
+
+% --- Section 4: Data Models & Schema ---
+\section{Database Models \& Schema}
+The database layer is managed via Django ORM over a PostgreSQL database.
+
+\begin{table}[h]
+\centering
+\small
+\color{monodark}
+\caption{\color{monodark} Core Database Entity Schema}
+\label{tab:schema}
+\begin{tabularx}{\linewidth}{l l X}
+\toprule
+\textbf{Model} & \textbf{Key Fields} & \textbf{Description} \\
+\midrule
+\texttt{User} & \texttt{email, username, supabase\_id} & Custom auth model linked to Supabase UUIDs. \\
+\texttt{Resume} & \texttt{file\_url, parsed\_text} & Stores extracted text from uploaded PDF resumes. \\
+\texttt{Interview} & \texttt{level, mode, status, duration} & Tracks session settings and state. \\
+\texttt{Question} & \texttt{text, order, is\_generated} & Ordered sequence of questions per session. \\
+\texttt{Response} & \texttt{text, ai\_feedback, video\_url} & Candidate answers and AI evaluations. \\
+\texttt{Analysis} & \texttt{scores, WPM, filler\_count} & Cached post-interview evaluation report. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% --- Section 5: NLP Evaluation & Analytics ---
+\section{Post-Interview NLP Analytics}
+Once an interview is concluded, the \texttt{InterviewAnalysisView} computes detailed analytics combining LLM qualitative feedback with linguistic metrics.
+
+\subsection{Linguistic Metrics}
+\begin{itemize}
+    \item \textbf{Words Per Minute (WPM)}: Evaluates speaking cadence:
+    \begin{equation}
+        \text{WPM} = \frac{\text{Total Words Transcribed}}{\text{Duration in Minutes}}
+    \end{equation}
+    Optimal interview pace is targeted between 130--160 WPM.
+    \item \textbf{Filler Word Counter}: Scans for hesitation markers (\textit{"um"}, \textit{"uh"}, \textit{"like"}, \textit{"basically"}, \textit{"actually"}).
+    \item \textbf{Power Word Counter}: Measures impact vocabulary (\textit{"architected"}, \textit{"optimized"}, \textit{"led"}, \textit{"collaborated"}).
+\end{itemize}
+
+\subsection{Multi-Dimensional Scoring}
+Scores (0--10 scale) are computed across four pillars:
+\begin{enumerate}
+    \item \textbf{Technical Accuracy}: Concept correctness and technical depth.
+    \item \textbf{Communication}: Structural clarity (STAR method compliance).
+    \item \textbf{Confidence}: Delivery smoothness and filler word absence.
+    \item \textbf{Overall Composite Score}: Weighted aggregation of all sub-scores.
+\end{enumerate}
+
+% --- Section 6: Engineering Challenges ---
+\section{Key Engineering Challenges}
+
+\subsection{1. WebSocket JWT Authentication}
+Standard browser WebSocket APIs do not allow custom HTTP headers during connection initiation. This was solved by passing the JWT in query strings (\texttt{?token=...}) and implementing a custom ASGI middleware (\texttt{TokenAuthMiddleware}) to decode the token before completing the WS handshake.
+
+\subsection{2. Resume Context Injection}
+Large PDF resumes can overload LLM token budgets. The backend uses \texttt{pdfplumber} upon upload to strip formatting and extract plaintext, caching a trimmed 3,000-character summary in the \texttt{Resume} table for fast context injection during prompt creation.
+
+\subsection{3. Bi-Directional State Synchronization}
+Maintaining state consistency across WebSockets, speech recognition, and video recording was achieved through a centralized React state pipeline in \texttt{Interview\_Simulator.jsx}, coupled with fallback HTTP REST endpoints for recovery.
+
+% --- Section 7: Future Scope & Conclusion ---
+\section{Future Work \& Conclusion}
+Planned enhancements include live facial expression analysis via OpenCV, dynamic AI avatar rendering, and direct integration with job application portals.
+
+In conclusion, \textbf{Virtual AI} provides an architectural blueprint for scalable, low-latency, multi-modal AI interview simulation, bridging theoretical LLM capability with practical candidate preparation.
+
+\end{document}

@@ -5,8 +5,6 @@ from django.utils import timezone
 
 logger = logging.getLogger(__name__)
 
-
-# Custom User Manager
 class UserManager(BaseUserManager):
     def create_user(self, email, username, supabase_id=None, password=None, **extra_fields):
         if not email:
@@ -22,13 +20,11 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_superuser', True)
         return self.create_user(email, username, supabase_id, password, **extra_fields)
 
-
-# Custom User Model
 class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     username = models.CharField(max_length=255, unique=True)
     profile_image_url = models.URLField(blank=True, null=True)
-    supabase_id = models.CharField(max_length=36, unique=True, null=True)  # Supabase UUID
+    supabase_id = models.CharField(max_length=36, unique=True, null=True) 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -89,7 +85,7 @@ class Interview(models.Model):
         return f"{self.title} for {self.user.username} at {self.scheduled_at}"
 
 
-# Question Model — unique_together removed to prevent IntegrityError on agent retries
+# Question Model 
 class Question(models.Model):
     interview = models.ForeignKey(Interview, on_delete=models.CASCADE, related_name='questions')
     text = models.TextField()

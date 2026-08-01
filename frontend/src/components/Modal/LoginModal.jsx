@@ -32,7 +32,7 @@ const LoginModal = ({ isOpen, onClose }) => {
         localStorage.setItem(REFRESH_TOKEN, data.token);
         localStorage.setItem("userEmail", data.user.email);
         localStorage.setItem("username", data.user.username); 
-        navigate("/dashboard"); // adjust route if needed
+        navigate("/dashboard"); 
       } else {
         setErrorMessage(data.error || "Login failed");
       }

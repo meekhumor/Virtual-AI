@@ -40,13 +40,11 @@ function Interview_Setting() {
   return (
     <div className='flex flex-col mx-auto max-w-2xl items-center rounded-3xl py-14 px-6 md:px-12 my-16 gap-12 bg-darkblue bg-opacity-40 w-[calc(100%-2rem)] md:w-full'>
 
-      {/* Heading */}
       <div className='flex flex-col gap-2 items-center'>
         <p className='text-gray-400 text-sm'>GENERAL INTERVIEW</p>
         <h1 className='text-white text-3xl'>Interview Setting</h1>
       </div>
 
-      {/* Level */}
       <div className='flex flex-col items-center gap-3'>
         <p className='text-gray-300 text-xl'>What experience level are you interviewing for?</p>
         <div className="text-white flex flex-col items-center max-w-3xl">
@@ -71,7 +69,6 @@ function Interview_Setting() {
         </div>
       </div>
 
-      {/* Time */}
       <div className='flex flex-col items-center gap-3'>
         <p className='text-gray-300 text-xl'>How long do you want your interview to be?</p>
         <div className="text-white flex flex-col items-center max-w-5xl">
@@ -93,9 +90,7 @@ function Interview_Setting() {
         </div>
       </div>
 
-      {/* Toggle — Practice / Real */}
       <div className="flex items-center justify-center gap-3">
-        {/* "Practice Interview" is active when isToggled=false */}
         <span className={`font-semibold ${!isToggled ? 'text-white' : 'text-gray-500'}`}>
           Practice Interview
         </span>
@@ -111,7 +106,6 @@ function Interview_Setting() {
             }`}
           />
         </div>
-        {/* "Real Interview" is active when isToggled=true */}
         <span className={`font-semibold ${isToggled ? 'text-white' : 'text-gray-500'}`}>
           Real Interview
         </span>

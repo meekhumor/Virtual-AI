@@ -25,7 +25,7 @@ export default function Camera_Preview1() {
     // Check for network access
     setNetworkAccess(navigator.onLine);
 
-    // Optional: Check network periodically
+    // Check network periodically
     const handleNetworkChange = () => setNetworkAccess(navigator.onLine);
     window.addEventListener('online', handleNetworkChange);
     window.addEventListener('offline', handleNetworkChange);

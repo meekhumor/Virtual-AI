@@ -50,9 +50,7 @@ const DomainCard = ({ domain }) => {
         
         
         
-        {/* Card Content */}
         <div className="relative z-10 flex flex-col">
-          {/* Image */}
           <div className="h-48 overflow-hidden">
             <img 
               src={domain.image}
@@ -61,7 +59,6 @@ const DomainCard = ({ domain }) => {
             />
           </div>
           
-          {/* Text Content */}
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl text-white">{domain.name}</h3>
@@ -73,7 +70,6 @@ const DomainCard = ({ domain }) => {
             
             <p className="text-zinc-400 mb-4">{domain.description}</p>
             
-            {/* Skills Tags */}
             <div className="flex flex-wrap gap-2">
               {domain.skills.map((skill) => (
                 <span 

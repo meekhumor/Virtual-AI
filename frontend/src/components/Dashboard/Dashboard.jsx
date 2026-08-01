@@ -149,7 +149,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Review Your Interview — live data */}
+      {/* Review Your Interview */}
       <div className="flex flex-col px-10 gap-4">
         <div className='flex justify-between'>
           <h1 className='text-white text-2xl'>Review Your Interview</h1>
@@ -177,7 +177,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Build interview + Featured */}
+      {/* Build interview */}
       <div className="flex mt-16 gap-6 px-10">
         <div className="bg-darkblue bg-opacity-60 w-1/3 rounded-lg flex gap-3 flex-col px-3 justify-center items-center">
           <img src="/dashboard/icon3.svg" alt="" className="w-44" />

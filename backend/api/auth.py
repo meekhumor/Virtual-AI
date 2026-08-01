@@ -1,22 +1,18 @@
 import jwt
 from urllib.parse import parse_qs
 
-# Imports for DRF (HTTP)
 from rest_framework.authentication import BaseAuthentication
 from rest_framework.exceptions import AuthenticationFailed
 
-# Imports for Channels (WebSocket)
 from channels.middleware import BaseMiddleware
 from channels.db import database_sync_to_async
-from asgiref.sync import sync_to_async  # <-- THIS IS THE CORRECT IMPORT # <-- 1. ADD sync_to_async HERE
+from asgiref.sync import sync_to_async  
 from django.contrib.auth.models import AnonymousUser
 
-# Shared imports
 from .supabase_client import supabase
 from .models import User
 
 
-# --- Reusable Async Helper Function ---
 @database_sync_to_async
 def get_user_from_supabase_id(supabase_id):
     """
@@ -27,8 +23,6 @@ def get_user_from_supabase_id(supabase_id):
     except User.DoesNotExist:
         return AnonymousUser()
 
-
-# --- Existing DRF/HTTP Authentication ---
 class SupabaseJWTAuthentication(BaseAuthentication):
     def authenticate(self, request):
         auth_header = request.headers.get('Authorization')
@@ -53,12 +47,10 @@ class SupabaseJWTAuthentication(BaseAuthentication):
             return (django_user, token)
 
         try:
-            # 1. Validate token with Supabase
             user = supabase.auth.get_user(token)
             if not user or not user.user:
                 raise AuthenticationFailed('Invalid token: User not found in Supabase.')
 
-            # 2. Get Django user (synchronously)
             django_user = User.objects.get(supabase_id=user.user.id)
             return (django_user, token)
         
@@ -68,11 +60,9 @@ class SupabaseJWTAuthentication(BaseAuthentication):
             raise AuthenticationFailed(f'Invalid token: {str(e)}')
 
 
-# --- Corrected Channels/WebSocket Authentication ---
 class TokenAuthMiddleware(BaseMiddleware):
     """
-    Custom WebSocket authentication middleware to validate Supabase JWT
-    passed in the query string (e.g., ?token=...)
+    Custom WebSocket authentication middleware to validate Supabase JWT passed in the query string 
     """
     async def __call__(self, scope, receive, send):
         # Get token from the query string
@@ -109,21 +99,16 @@ class TokenAuthMiddleware(BaseMiddleware):
             return await super().__call__(scope, receive, send)
 
         try:
-            # 1. Validate the token asynchronously
-            #    We wrap the blocking call in sync_to_async
-            supabase_user = await sync_to_async(supabase.auth.get_user)(token) # <-- 2. THIS IS THE FIX
+            supabase_user = await sync_to_async(supabase.auth.get_user)(token) 
             
             if not supabase_user or not supabase_user.user:
                  scope['user'] = AnonymousUser()
             else:
-                # 2. Get the corresponding User from your Django database (asynchronously)
                 supabase_id = supabase_user.user.id
                 scope['user'] = await get_user_from_supabase_id(supabase_id)
 
         except Exception as e:
-            # Token was invalid, expired, or user doesn't exist
             print(f"Token validation error: {e}")
             scope['user'] = AnonymousUser()
 
-        # Continue processing the scope
         return await super().__call__(scope, receive, send)

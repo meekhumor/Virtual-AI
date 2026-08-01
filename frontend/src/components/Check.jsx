@@ -12,7 +12,7 @@ const powerWords = [
   "competent", "skilled", "proactive", "resourceful", "accomplished", "dedicated", 
   "team player", "forward-thinking", "problem-solver", "expert", "confident",
   "strong communicator", "organized", "hardworking", "efficient", "resilient",
-  "professional", "goal-driven", "self-starter", "committed"
+  "professional", "goal driven", "self-starter", "committed"
 ];
 
 const negativeWords = [

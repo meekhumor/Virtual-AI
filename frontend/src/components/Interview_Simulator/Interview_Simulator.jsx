@@ -289,7 +289,7 @@ export default function Interview_Simulator() {
     if (finalText) {
       SpeechRecognition.stopListening();
       setUserSpeaking(false);
-      setProcessing(true); // Show loader during upload
+      setProcessing(true); 
       
       let videoUrl = "";
       if (mode === "REAL") {
@@ -540,7 +540,6 @@ export default function Interview_Simulator() {
     stopVideoTracks();
     if (document.fullscreenElement) document.exitFullscreen().catch(() => { });
     
-    // Calculate elapsed time spent
     const elapsed = duration && timeLeft !== null ? Math.max(0, duration - timeLeft) : 0;
     await patchStatus(status, elapsed);
     
@@ -570,7 +569,6 @@ export default function Interview_Simulator() {
           )}
         </div>
 
-        {/* Countdown */}
         <div className="flex flex-col items-center gap-1">
           <span className="font-mono text-2xl font-bold tracking-widest" style={{ color: timerColor }}>
             {formatTime(timeLeft)}
@@ -587,8 +585,7 @@ export default function Interview_Simulator() {
             />
           </div>
         </div>
-
-        {/* Auto submit choices*/}
+        
         <div className="flex items-center gap-3">
           {isStarted && (
             <div className="flex items-center gap-1.5 bg-black1 border border-darkblue/60 px-3 py-1.5 rounded-full text-xs text-zinc-400">
@@ -794,7 +791,6 @@ export default function Interview_Simulator() {
               </div>
 
               <div className="flex items-center justify-center gap-16 xl:gap-28">
-                {/* AI Orb */}
                 <SpeakOrb
                   icon={Bot}
                   label="Virtual Ai"
@@ -803,7 +799,6 @@ export default function Interview_Simulator() {
                   size={160}
                 />
 
-                {/* User Orb */}
                 <SpeakOrb
                   icon={User}
                   label="You"
@@ -838,7 +833,6 @@ export default function Interview_Simulator() {
                 </div>
               )}
 
-              {/* Draggable webcam */}
               {videoStatus && (
                 <Draggable bounds="parent">
                   <div className="absolute bottom-4 right-4 z-10 cursor-move select-none">
@@ -923,7 +917,6 @@ export default function Interview_Simulator() {
       <footer
         className="flex items-center justify-between px-6 py-3 shrink-0 bg-black border-t border-darkblue"
       >
-        {/* Chat button  */}
         <div className="flex items-center gap-2">
           <button
             id="btn-chat-toggle"
@@ -941,7 +934,6 @@ export default function Interview_Simulator() {
           </button>
         </div>
 
-        {/* End interview button  */}
         <button
           id="btn-end-interview"
           onClick={() => setShowEndModal(true)}
@@ -964,7 +956,6 @@ export default function Interview_Simulator() {
           <span>End Interview</span>
         </button>
 
-        {/* Code editor and camera button  */}
         <div className="flex items-center gap-2">
           <button
             id="btn-camera-toggle"

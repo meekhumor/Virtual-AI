@@ -108,7 +108,6 @@ const Profile = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 mt-16 px-6 md:px-12 w-full">
-      {/* Profile Header */}
       <div className="bg-darkblue bg-opacity-40 text-white rounded-lg shadow-lg">
         <div className="p-6">
           <div className="flex items-start justify-between">
