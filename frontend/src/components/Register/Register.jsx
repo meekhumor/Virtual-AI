@@ -84,74 +84,80 @@ export default function Register() {
   };
 
   return (
-    <div className="w-full max-w-5xl flex mx-auto h-full mt-16">
-      {/* Left */}
-      <div className="hidden lg:flex lg:flex-col lg:w-1/2 bg-darkblue bg-opacity-40 lg:justify-center lg:gap-12 lg:px-14 h-full lg:py-20 rounded-l-3xl">
-        <h1 className="text-white text-3xl">Land a job worth loving.</h1>
-        <div className="flex flex-col gap-8">
-          {signup.map((step, index) => (
-            <div key={index}>
-              <CardSign title={step.title} description={step.description} />
+    <div className="w-full max-w-5xl flex flex-col mx-auto h-full mt-16 gap-3">
+      <div className="w-full flex rounded-3xl overflow-hidden">
+        {/* Left */}
+        <div className="hidden lg:flex lg:flex-col lg:w-1/2 bg-darkblue bg-opacity-40 lg:justify-center lg:gap-12 lg:px-14 h-full lg:py-20 rounded-l-3xl">
+          <h1 className="text-white text-3xl">Land a job worth loving.</h1>
+          <div className="flex flex-col gap-8">
+            {signup.map((step, index) => (
+              <div key={index}>
+                <CardSign title={step.title} description={step.description} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right */}
+        <div className="flex flex-col gap-10 bg-black1 bg-opacity-40 p-20 px-24 lg:rounded-r-3xl sm:mx-auto">
+          <h1 className="text-white text-3xl">Sign Up</h1>
+          <form onSubmit={handleSubmit} className="flex flex-col">
+            <label htmlFor="username" className="text-gray-200 ml-2 mb-2">
+              Username
+            </label>
+            <input
+              id="username"
+              className="rounded-full border-2 w-80 py-1 pl-4 mb-4"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+            <label htmlFor="email" className="text-gray-200 ml-2 mb-2">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              className="rounded-full border-2 py-1 pl-4 mb-4"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <label htmlFor="password" className="text-gray-200 ml-2 mb-2">
+              Password
+            </label>
+            <input
+              id="password"
+              className="rounded-full border-2 py-1 pl-4 mb-4"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+            <div className="flex items-center gap-4 mt-6">
+              <button
+                type="submit"
+                disabled={loading}
+                className="bg-blue1 hover:bg-darkblue/50 text-white py-1.5 px-4 rounded-full w-28 disabled:opacity-50"
+              >
+                {loading ? "Loading..." : "Continue"}
+              </button>
+              <button
+                type="button"
+                onClick={triggerGuestLoginPrompt}
+                className="text-zinc-400 hover:text-zinc-300 underline ml-24 bg-transparent border-0 cursor-pointer"
+              >
+                Guest Login
+              </button>
             </div>
-          ))}
+          </form>
         </div>
       </div>
 
-      {/* Right */}
-      <div className="flex flex-col gap-10 bg-black1 bg-opacity-40 p-20 px-24 lg:rounded-r-3xl sm:mx-auto">
-        <h1 className="text-white text-3xl">Sign Up</h1>
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          <label htmlFor="username" className="text-gray-200 ml-2 mb-2">
-            Username
-          </label>
-          <input
-            id="username"
-            className="rounded-full border-2 w-80 py-1 pl-4 mb-4"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
-          <label htmlFor="email" className="text-gray-200 ml-2 mb-2">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            className="rounded-full border-2 py-1 pl-4 mb-4"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <label htmlFor="password" className="text-gray-200 ml-2 mb-2">
-            Password
-          </label>
-          <input
-            id="password"
-            className="rounded-full border-2 py-1 pl-4 mb-4"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <div className="flex items-center gap-4 mt-6">
-            <button
-              type="submit"
-              disabled={loading}
-              className="bg-blue1 hover:bg-darkblue/50 text-white py-1.5 px-4 rounded-full w-28 disabled:opacity-50"
-            >
-              {loading ? "Loading..." : "Continue"}
-            </button>
-            <button
-              type="button"
-              onClick={triggerGuestLoginPrompt}
-              className="text-zinc-400 hover:text-zinc-300 underline ml-24 bg-transparent border-0 cursor-pointer"
-            >
-              Guest Login
-            </button>
-          </div>
-        </form>
-      </div>
+      <p className="text-center text-sm text-zinc-400 mt-1">
+        <span className="text-blue1 font-medium">Note:</span> Backend is hosted on Render (Free Tier). Initial requests may take up to 2 minutes while the server spins up.
+      </p>
 
       {showGuestModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
